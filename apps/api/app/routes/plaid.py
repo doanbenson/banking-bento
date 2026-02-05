@@ -15,6 +15,17 @@ def create_link_token():
         return jsonify(result[0]), result[1]
     return jsonify(result)
 
+@bp.route('/sandbox/public_token/create', methods=['POST'])
+def create_sandbox_public_token():
+    """Create a sandbox public token"""
+    data = request.get_json() or {}
+    user_id = data.get('user_id', 'user-sandbox')
+    
+    result = plaid_handler.create_sandbox_public_token(user_id)
+    
+    if isinstance(result, tuple):
+        return jsonify(result[0]), result[1]
+    return jsonify(result)
 
 @bp.route('/exchange-token', methods=['POST'])
 def exchange_token():

@@ -1,8 +1,11 @@
 import os
+from dotenv import load_dotenv
 from plaid.api import plaid_api
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
 import plaid
+
+load_dotenv()
 
 # Plaid Configuration
 PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')

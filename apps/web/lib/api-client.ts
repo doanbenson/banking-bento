@@ -11,8 +11,8 @@ const apiClient = axios.create({
 
 // Plaid API
 export const plaidApi = {
-  createLinkToken: async (userId: string = 'user-sandbox') => {
-    const response = await apiClient.post('/api/plaid/create-link-token', { user_id: userId });
+  create_sandbox_public_token: async (userId: string = 'user-sandbox') => {
+    const response = await apiClient.post('/api/plaid/sandbox/public_token/create', { user_id: userId });
     return response.data;
   },
 

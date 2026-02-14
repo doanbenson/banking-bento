@@ -7,12 +7,14 @@ import TransactionList from '@/components/bank/TransactionList';
 import PlaidLinkButton from '@/components/bank/PlaidLinkButton';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const router = useRouter();
 
   const fetchData = async () => {
     setLoading(true);
@@ -71,6 +73,7 @@ export default function Home() {
             Manage your accounts and transactions
           </p>
         </div>
+        <Button className="text-left" onClick={() => router.push('/trading')}>Trading Page</Button>
         <PlaidLinkButton
           onSuccess={handleLinkSuccess}
           onError={(error) => console.error('Link error:', error)}
@@ -79,7 +82,7 @@ export default function Home() {
 
       {/* Total Balance */}
       {accounts.length > 0 && (
-        <div className="mb-8 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
+        <div className="mb-8 p-6 bg-linear-to-r from-blue-500 to-purple-600 rounded-lg text-white">
           <p className="text-sm opacity-90">Total Balance</p>
           <p className="text-4xl font-bold mt-2">{formatCurrency(totalBalance)}</p>
           <p className="text-sm opacity-75 mt-1">Across {accounts.length} accounts</p>

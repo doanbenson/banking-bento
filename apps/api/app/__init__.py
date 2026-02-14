@@ -8,14 +8,19 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     
-    # Enable CORS for Next.js frontend
-    CORS(app, origins=['http://localhost:3000'])
+    # Enable CORS for Next.js frontend - very permissive for debugging
+    CORS(app, 
+         resources={r"/api/*": {"origins": "*"}},
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         supports_credentials=False)
     
     # Register blueprints
-    from app.routes import plaid, accounts, transactions
+    from app.routes import plaid, accounts, transactions, trading
     app.register_blueprint(plaid.bp)
     app.register_blueprint(accounts.bp)
     app.register_blueprint(transactions.bp)
+    app.register_blueprint(trading.bp)
     
     @app.route('/health')
     def health():

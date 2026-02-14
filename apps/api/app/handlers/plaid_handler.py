@@ -5,30 +5,54 @@ from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchan
 from plaid.model.auth_get_request import AuthGetRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
+from plaid.model.products import Products
 from app.config import plaid_client, PLAID_PRODUCTS, PLAID_COUNTRY_CODES
 from app.models import items_store, accounts_store, transactions_store
 import datetime
 
 def create_link_token(user_id='user-sandbox'):
-    """Create a Plaid Link token for initializing Plaid Link"""
+    """Create a link token for Plaid Link initialization"""
     try:
         request_data = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(
                 client_user_id=user_id
             ),
             client_name="Plaid Bank App",
-            products=PLAID_PRODUCTS,
+            products=[Products('auth'), Products('transactions')],
             country_codes=PLAID_COUNTRY_CODES,
-            language='en',
-            redirect_uri='http://localhost:3000'  # Optional for OAuth
+            language='en'
         )
         
         response = plaid_client.link_token_create(request_data)
+        
         return {
-            'link_token': response['link_token'],
-            'expiration': response['expiration']
+            'link_token': response.link_token,
+            'expiration': response.expiration.isoformat() if hasattr(response, 'expiration') else None
         }
     except Exception as e:
+        print(f"Error creating link token: {str(e)}")
+        return {'error': str(e)}, 500
+
+
+def create_sandbox_public_token(user_id='user-sandbox'):
+    """Create a sandbox public token for testing (sandbox only)"""
+    try:
+        # Create a sandbox public token with a test institution
+        request_data = SandboxPublicTokenCreateRequest(
+            institution_id='ins_109508',  # Chase (sandbox)
+            initial_products=[Products('auth'), Products('transactions')]
+        )
+        
+        response = plaid_client.sandbox_public_token_create(request_data)
+        
+        # Convert response to dict - response is a Plaid API response object
+        return {
+            'public_token': response.public_token,
+            'message': 'Sandbox public token created successfully'
+        }
+    except Exception as e:
+        print(f"Error creating sandbox public token: {str(e)}")
         return {'error': str(e)}, 500
 
 
@@ -41,8 +65,8 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
         )
         exchange_response = plaid_client.item_public_token_exchange(exchange_request)
         
-        access_token = exchange_response['access_token']
-        item_id = exchange_response['item_id']
+        access_token = exchange_response.access_token
+        item_id = exchange_response.item_id
         
         # Store the item
         items_store[item_id] = {
@@ -61,19 +85,19 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
         balance_response = plaid_client.accounts_balance_get(balance_request)
         
         # Store accounts
-        for account in balance_response['accounts']:
-            account_id = account['account_id']
+        for account in balance_response.accounts:
+            account_id = account.account_id
             accounts_store[account_id] = {
                 'account_id': account_id,
                 'item_id': item_id,
-                'name': account['name'],
-                'mask': account['mask'],
-                'type': account['type'],
-                'subtype': account['subtype'],
+                'name': account.name,
+                'mask': account.mask,
+                'type': str(account.type) if account.type else None,
+                'subtype': str(account.subtype) if account.subtype else None,
                 'balance': {
-                    'available': account['balances']['available'],
-                    'current': account['balances']['current'],
-                    'limit': account['balances']['limit']
+                    'available': account.balances.available,
+                    'current': account.balances.current,
+                    'limit': account.balances.limit
                 }
             }
         
@@ -87,6 +111,7 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
         }
         
     except Exception as e:
+        print(f"Error exchanging public token: {str(e)}")
         return {'error': str(e)}, 500
 
 
@@ -106,23 +131,23 @@ def sync_transactions(access_token, item_id):
             response = plaid_client.transactions_sync(request_data)
             
             # Add new transactions
-            for transaction in response['added']:
-                transaction_id = transaction['transaction_id']
+            for transaction in response.added:
+                transaction_id = transaction.transaction_id
                 transactions_store[transaction_id] = {
                     'transaction_id': transaction_id,
-                    'account_id': transaction['account_id'],
+                    'account_id': transaction.account_id,
                     'item_id': item_id,
-                    'amount': transaction['amount'],
-                    'date': transaction['date'],
-                    'name': transaction['name'],
-                    'merchant_name': transaction.get('merchant_name'),
-                    'category': transaction.get('category', []),
-                    'pending': transaction['pending']
+                    'amount': float(transaction.amount),
+                    'date': str(transaction.date),
+                    'name': transaction.name,
+                    'merchant_name': getattr(transaction, 'merchant_name', None),
+                    'category': transaction.category if hasattr(transaction, 'category') else [],
+                    'pending': transaction.pending
                 }
                 added.append(transactions_store[transaction_id])
             
-            has_more = response['has_more']
-            cursor = response['next_cursor']
+            has_more = response.has_more
+            cursor = response.next_cursor
         
         return {
             'added': len(added),
@@ -130,6 +155,7 @@ def sync_transactions(access_token, item_id):
         }
         
     except Exception as e:
+        print(f"Error syncing transactions: {str(e)}")
         return {'error': str(e)}, 500
 
 

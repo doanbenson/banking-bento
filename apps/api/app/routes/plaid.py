@@ -5,7 +5,7 @@ bp = Blueprint('plaid', __name__, url_prefix='/api/plaid')
 
 @bp.route('/create-link-token', methods=['POST'])
 def create_link_token():
-    """Create a Plaid Link token"""
+    """Create a link token for Plaid Link initialization"""
     data = request.get_json() or {}
     user_id = data.get('user_id', 'user-sandbox')
     

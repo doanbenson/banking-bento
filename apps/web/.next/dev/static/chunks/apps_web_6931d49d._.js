@@ -9,13 +9,15 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__default__export__,
     "plaidApi",
     ()=>plaidApi,
+    "tradingApi",
+    ()=>tradingApi,
     "transactionsApi",
     ()=>transactionsApi
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$axios$2f$lib$2f$axios$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/axios/lib/axios.js [app-client] (ecmascript)");
 ;
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:5000") || 'http://localhost:5000';
+const API_BASE_URL = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const apiClient = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$axios$2f$lib$2f$axios$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].create({
     baseURL: API_BASE_URL,
     headers: {
@@ -25,6 +27,12 @@ const apiClient = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2
 const plaidApi = {
     createLinkToken: async (userId = 'user-sandbox')=>{
         const response = await apiClient.post('/api/plaid/create-link-token', {
+            user_id: userId
+        });
+        return response.data;
+    },
+    create_sandbox_public_token: async (userId = 'user-sandbox')=>{
+        const response = await apiClient.post('/api/plaid/sandbox/public_token/create', {
             user_id: userId
         });
         return response.data;
@@ -64,6 +72,93 @@ const transactionsApi = {
         const response = await apiClient.get('/api/transactions', {
             params
         });
+        return response.data;
+    }
+};
+const tradingApi = {
+    // Account
+    getAccount: async ()=>{
+        const response = await apiClient.get('/api/trading/account');
+        return response.data;
+    },
+    // Positions
+    getPositions: async ()=>{
+        const response = await apiClient.get('/api/trading/positions');
+        return response.data;
+    },
+    getPosition: async (symbol)=>{
+        const response = await apiClient.get(`/api/trading/positions/${symbol.toUpperCase()}`);
+        return response.data;
+    },
+    closePosition: async (symbol, qty)=>{
+        const response = await apiClient.delete(`/api/trading/positions/${symbol.toUpperCase()}`, {
+            data: qty ? {
+                qty
+            } : {}
+        });
+        return response.data;
+    },
+    // Orders
+    getOrders: async (status = 'open')=>{
+        const response = await apiClient.get('/api/trading/orders', {
+            params: {
+                status
+            }
+        });
+        return response.data;
+    },
+    getOrder: async (orderId)=>{
+        const response = await apiClient.get(`/api/trading/orders/${orderId}`);
+        return response.data;
+    },
+    placeOrder: async (params)=>{
+        const response = await apiClient.post('/api/trading/orders', {
+            symbol: params.symbol.toUpperCase(),
+            qty: params.qty,
+            side: params.side,
+            type: params.type || 'market',
+            limit_price: params.limit_price
+        });
+        return response.data;
+    },
+    placeMarketOrder: async (symbol, qty, side)=>{
+        return tradingApi.placeOrder({
+            symbol,
+            qty,
+            side,
+            type: 'market'
+        });
+    },
+    placeLimitOrder: async (symbol, qty, side, limitPrice)=>{
+        return tradingApi.placeOrder({
+            symbol,
+            qty,
+            side,
+            type: 'limit',
+            limit_price: limitPrice
+        });
+    },
+    cancelOrder: async (orderId)=>{
+        const response = await apiClient.delete(`/api/trading/orders/${orderId}`);
+        return response.data;
+    },
+    // Market Data
+    getMarketData: async (symbol, timeframe = '1Day', days = 30)=>{
+        const response = await apiClient.get(`/api/trading/market/${symbol.toUpperCase()}`, {
+            params: {
+                timeframe,
+                days
+            }
+        });
+        return response.data;
+    },
+    getQuote: async (symbol)=>{
+        const response = await apiClient.get(`/api/trading/quote/${symbol.toUpperCase()}`);
+        return response.data;
+    },
+    // Portfolio
+    getPortfolioPerformance: async ()=>{
+        const response = await apiClient.get('/api/trading/portfolio/performance');
         return response.data;
     }
 };
@@ -1008,85 +1103,99 @@ function PlaidLinkButton({ onSuccess, onError, userId = 'user-sandbox', buttonTe
     _s();
     const [linkToken, setLinkToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    // Fetch link token from Flask backend
-    const generateToken = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "PlaidLinkButton.useCallback[generateToken]": async ()=>{
-            setLoading(true);
-            try {
-                const data = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["plaidApi"].createLinkToken(userId);
-                setLinkToken(data.link_token);
-            } catch (error) {
-                console.error('Error creating link token:', error);
-                onError?.(error);
-            } finally{
-                setLoading(false);
-            }
+    // Fetch link token on mount
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "PlaidLinkButton.useEffect": ()=>{
+            const fetchLinkToken = {
+                "PlaidLinkButton.useEffect.fetchLinkToken": async ()=>{
+                    try {
+                        console.log('Fetching link token...');
+                        const data = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["plaidApi"].createLinkToken(userId);
+                        if (data.link_token) {
+                            console.log('Link token received:', data.link_token);
+                            setLinkToken(data.link_token);
+                        } else {
+                            console.error('No link token in response:', data);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching link token:', error);
+                        console.error('Error details:', {
+                            message: error.message,
+                            response: error.response?.data,
+                            status: error.response?.status
+                        });
+                        onError?.(error);
+                    }
+                }
+            }["PlaidLinkButton.useEffect.fetchLinkToken"];
+            fetchLinkToken();
         }
-    }["PlaidLinkButton.useCallback[generateToken]"], [
-        userId,
-        onError
+    }["PlaidLinkButton.useEffect"], [
+        userId
     ]);
-    // Handle successful link
-    const handleOnSuccess = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "PlaidLinkButton.useCallback[handleOnSuccess]": async (public_token, metadata)=>{
+    // Handle successful Plaid Link flow
+    const handlePlaidSuccess = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "PlaidLinkButton.useCallback[handlePlaidSuccess]": async (public_token, metadata)=>{
             setLoading(true);
             try {
-                // Exchange public token for access token
-                const data = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["plaidApi"].exchangePublicToken(public_token, userId);
-                console.log('Successfully linked account:', data);
-                onSuccess?.(data);
+                console.log('Plaid Link success! Public token received:', public_token);
+                console.log('Metadata:', metadata);
+                console.log('Exchanging public token for access token...');
+                const exchangeData = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["plaidApi"].exchangePublicToken(public_token, userId);
+                console.log('Successfully linked account:', exchangeData);
+                onSuccess?.(exchangeData);
             } catch (error) {
-                console.error('Error exchanging public token:', error);
+                console.error('Error exchanging token:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status
+                });
+                alert(`Error: ${error.response?.data?.error || error.message}`);
                 onError?.(error);
             } finally{
                 setLoading(false);
             }
         }
-    }["PlaidLinkButton.useCallback[handleOnSuccess]"], [
+    }["PlaidLinkButton.useCallback[handlePlaidSuccess]"], [
         userId,
         onSuccess,
         onError
     ]);
-    // Plaid Link configuration
+    // Initialize Plaid Link
     const config = {
         token: linkToken,
-        onSuccess: handleOnSuccess,
+        onSuccess: handlePlaidSuccess,
         onExit: (error, metadata)=>{
             if (error) {
                 console.error('Plaid Link exited with error:', error);
                 onError?.(error);
+            } else {
+                console.log('User exited Plaid Link');
             }
         }
     };
     const { open, ready } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$plaid$2d$link$2f$dist$2f$index$2e$umd$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePlaidLink"])(config);
-    // Handle button click
-    const handleClick = async ()=>{
-        if (!linkToken) {
-            await generateToken();
-        } else {
+    const handleClick = ()=>{
+        if (ready) {
+            console.log('Opening Plaid Link modal...');
             open();
+        } else {
+            console.log('Plaid Link not ready yet...');
         }
     };
-    // Auto-open when link token is ready
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
-        "PlaidLinkButton.useState": ()=>{
-            if (linkToken && ready) {
-                open();
-            }
-        }
-    }["PlaidLinkButton.useState"]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
         onClick: handleClick,
-        disabled: loading || linkToken !== null && !ready,
+        disabled: loading || !ready,
         variant: variant,
-        children: loading ? 'Loading...' : buttonText
+        children: loading ? 'Processing...' : !ready ? 'Loading Link...' : buttonText
     }, void 0, false, {
         fileName: "[project]/apps/web/components/bank/PlaidLinkButton.tsx",
-        lineNumber: 90,
+        lineNumber: 104,
         columnNumber: 5
     }, this);
 }
-_s(PlaidLinkButton, "K22y3XtFfcACwSjAB7vNckmhe/8=", false, function() {
+_s(PlaidLinkButton, "URYqOWV6BPJ32u57h5cxDGatI1Q=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$plaid$2d$link$2f$dist$2f$index$2e$umd$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePlaidLink"]
     ];
@@ -1113,9 +1222,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$bank$2f$PlaidLinkButton$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/components/bank/PlaidLinkButton.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/components/ui/button.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$separator$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/components/ui/separator.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
+;
 ;
 ;
 ;
@@ -1129,6 +1240,7 @@ function Home() {
     const [transactions, setTransactions] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
     const [selectedAccount, setSelectedAccount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const fetchData = async ()=>{
         setLoading(true);
         try {
@@ -1178,7 +1290,7 @@ function Home() {
                                 children: "Dashboard"
                             }, void 0, false, {
                                 fileName: "[project]/apps/web/app/page.tsx",
-                                lineNumber: 69,
+                                lineNumber: 71,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1186,13 +1298,22 @@ function Home() {
                                 children: "Manage your accounts and transactions"
                             }, void 0, false, {
                                 fileName: "[project]/apps/web/app/page.tsx",
-                                lineNumber: 70,
+                                lineNumber: 72,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 68,
+                        lineNumber: 70,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                        className: "text-left",
+                        onClick: ()=>router.push('/trading'),
+                        children: "Trading Page"
+                    }, void 0, false, {
+                        fileName: "[project]/apps/web/app/page.tsx",
+                        lineNumber: 76,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$bank$2f$PlaidLinkButton$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1200,24 +1321,24 @@ function Home() {
                         onError: (error)=>console.error('Link error:', error)
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 74,
+                        lineNumber: 77,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/app/page.tsx",
-                lineNumber: 67,
+                lineNumber: 69,
                 columnNumber: 7
             }, this),
             accounts.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "mb-8 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white",
+                className: "mb-8 p-6 bg-linear-to-r from-blue-500 to-purple-600 rounded-lg text-white",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         className: "text-sm opacity-90",
                         children: "Total Balance"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 83,
+                        lineNumber: 86,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1225,7 +1346,7 @@ function Home() {
                         children: formatCurrency(totalBalance)
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 84,
+                        lineNumber: 87,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1237,13 +1358,13 @@ function Home() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 85,
+                        lineNumber: 88,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/app/page.tsx",
-                lineNumber: 82,
+                lineNumber: 85,
                 columnNumber: 9
             }, this),
             loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1253,12 +1374,12 @@ function Home() {
                     children: "Loading..."
                 }, void 0, false, {
                     fileName: "[project]/apps/web/app/page.tsx",
-                    lineNumber: 91,
+                    lineNumber: 94,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/apps/web/app/page.tsx",
-                lineNumber: 90,
+                lineNumber: 93,
                 columnNumber: 9
             }, this) : accounts.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "text-center py-12",
@@ -1268,7 +1389,7 @@ function Home() {
                         children: "No accounts linked"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 95,
+                        lineNumber: 98,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1276,7 +1397,7 @@ function Home() {
                         children: "Link your bank account to get started"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 96,
+                        lineNumber: 99,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$bank$2f$PlaidLinkButton$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1285,13 +1406,13 @@ function Home() {
                         variant: "default"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 99,
+                        lineNumber: 102,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/app/page.tsx",
-                lineNumber: 94,
+                lineNumber: 97,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                 children: [
@@ -1306,7 +1427,7 @@ function Home() {
                                         children: "Your Accounts"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/app/page.tsx",
-                                        lineNumber: 110,
+                                        lineNumber: 113,
                                         columnNumber: 15
                                     }, this),
                                     selectedAccount && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -1316,13 +1437,13 @@ function Home() {
                                         children: "View All"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/app/page.tsx",
-                                        lineNumber: 112,
+                                        lineNumber: 115,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/web/app/page.tsx",
-                                lineNumber: 109,
+                                lineNumber: 112,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1332,25 +1453,25 @@ function Home() {
                                         onClick: ()=>handleAccountClick(account.account_id)
                                     }, account.account_id, false, {
                                         fileName: "[project]/apps/web/app/page.tsx",
-                                        lineNumber: 123,
+                                        lineNumber: 126,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/apps/web/app/page.tsx",
-                                lineNumber: 121,
+                                lineNumber: 124,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 108,
+                        lineNumber: 111,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$components$2f$ui$2f$separator$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Separator"], {
                         className: "my-8"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 132,
+                        lineNumber: 135,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1360,12 +1481,12 @@ function Home() {
                             description: selectedAccount ? 'Filtered by selected account' : 'Your recent activity across all accounts'
                         }, void 0, false, {
                             fileName: "[project]/apps/web/app/page.tsx",
-                            lineNumber: 136,
+                            lineNumber: 139,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/apps/web/app/page.tsx",
-                        lineNumber: 135,
+                        lineNumber: 138,
                         columnNumber: 11
                     }, this)
                 ]
@@ -1373,11 +1494,15 @@ function Home() {
         ]
     }, void 0, true, {
         fileName: "[project]/apps/web/app/page.tsx",
-        lineNumber: 65,
+        lineNumber: 67,
         columnNumber: 5
     }, this);
 }
-_s(Home, "D29RUXUWF5bCo2v4OGIPkREO9f8=");
+_s(Home, "dIWD3is2Rs1z1i4V7PT2GRAGI9Y=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
+    ];
+});
 _c = Home;
 var _c;
 __turbopack_context__.k.register(_c, "Home");

@@ -26,6 +26,7 @@ apps/web/build/
 *.tsbuildinfo
 next-env.d.ts
 apps/web/next-env.d.ts
+.next
 
 # Testing
 /coverage

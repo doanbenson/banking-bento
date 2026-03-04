@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccess } from 'react-plaid-link';
+import { useState, useCallback, useEffect } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/button';
 import { plaidApi } from '@/lib/api-client';
 
@@ -23,76 +23,90 @@ export default function PlaidLinkButton({
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch link token from Flask backend
-  const generateToken = useCallback(async () => {
+  // Fetch link token on mount
+  useEffect(() => {
+    const fetchLinkToken = async () => {
+      try {
+        console.log('Fetching link token...');
+        const data = await plaidApi.createLinkToken(userId);
+        if (data.link_token) {
+          console.log('Link token received:', data.link_token);
+          setLinkToken(data.link_token);
+        } else {
+          console.error('No link token in response:', data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching link token:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        onError?.(error);
+      }
+    };
+    
+    fetchLinkToken();
+  }, [userId]);
+
+  // Handle successful Plaid Link flow
+  const handlePlaidSuccess = useCallback(async (public_token: string, metadata: any) => {
     setLoading(true);
     try {
-      const data = await plaidApi.createLinkToken(userId);
-      setLinkToken(data.link_token);
-    } catch (error) {
-      console.error('Error creating link token:', error);
+      console.log('Plaid Link success! Public token received:', public_token);
+      console.log('Metadata:', metadata);
+      console.log('Exchanging public token for access token...');
+      
+      const exchangeData = await plaidApi.exchangePublicToken(public_token, userId);
+      
+      console.log('Successfully linked account:', exchangeData);
+      onSuccess?.(exchangeData);
+    } catch (error: any) {
+      console.error('Error exchanging token:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(`Error: ${error.response?.data?.error || error.message}`);
       onError?.(error);
     } finally {
       setLoading(false);
     }
-  }, [userId, onError]);
+  }, [userId, onSuccess, onError]);
 
-  // Handle successful link
-  const handleOnSuccess = useCallback<PlaidLinkOnSuccess>(
-    async (public_token, metadata) => {
-      setLoading(true);
-      try {
-        // Exchange public token for access token
-        const data = await plaidApi.exchangePublicToken(public_token, userId);
-        console.log('Successfully linked account:', data);
-        onSuccess?.(data);
-      } catch (error) {
-        console.error('Error exchanging public token:', error);
-        onError?.(error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [userId, onSuccess, onError]
-  );
-
-  // Plaid Link configuration
-  const config: PlaidLinkOptions = {
+  // Initialize Plaid Link
+  const config = {
     token: linkToken,
-    onSuccess: handleOnSuccess,
-    onExit: (error, metadata) => {
+    onSuccess: handlePlaidSuccess,
+    onExit: (error: any, metadata: any) => {
       if (error) {
         console.error('Plaid Link exited with error:', error);
         onError?.(error);
+      } else {
+        console.log('User exited Plaid Link');
       }
     },
   };
 
   const { open, ready } = usePlaidLink(config);
 
-  // Handle button click
-  const handleClick = async () => {
-    if (!linkToken) {
-      await generateToken();
-    } else {
+  const handleClick = () => {
+    if (ready) {
+      console.log('Opening Plaid Link modal...');
       open();
+    } else {
+      console.log('Plaid Link not ready yet...');
     }
   };
-
-  // Auto-open when link token is ready
-  useState(() => {
-    if (linkToken && ready) {
-      open();
-    }
-  });
 
   return (
     <Button
       onClick={handleClick}
-      disabled={loading || (linkToken !== null && !ready)}
+      disabled={loading || !ready}
       variant={variant}
     >
-      {loading ? 'Loading...' : buttonText}
+      {loading ? 'Processing...' : !ready ? 'Loading Link...' : buttonText}
     </Button>
   );
 }

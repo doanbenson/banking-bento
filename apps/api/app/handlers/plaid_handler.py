@@ -19,16 +19,19 @@ def create_link_token(user_id='user-sandbox'):
             client_name="Plaid Bank App",
             products=PLAID_PRODUCTS,
             country_codes=PLAID_COUNTRY_CODES,
-            language='en',
-            redirect_uri='http://localhost:3000'  # Optional for OAuth
+            language='en'
+            # redirect_uri is optional and only needed if configured in Plaid Dashboard
         )
         
         response = plaid_client.link_token_create(request_data)
+        # Convert response object to dictionary
+        response_dict = response.to_dict()
         return {
-            'link_token': response['link_token'],
-            'expiration': response['expiration']
+            'link_token': response_dict['link_token'],
+            'expiration': response_dict['expiration']
         }
     except Exception as e:
+        print(f"Error creating link token: {e}")  # Add logging
         return {'error': str(e)}, 500
 
 
@@ -40,9 +43,10 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
             public_token=public_token
         )
         exchange_response = plaid_client.item_public_token_exchange(exchange_request)
+        exchange_dict = exchange_response.to_dict()
         
-        access_token = exchange_response['access_token']
-        item_id = exchange_response['item_id']
+        access_token = exchange_dict['access_token']
+        item_id = exchange_dict['item_id']
         
         # Store the item
         items_store[item_id] = {
@@ -59,9 +63,10 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
         # Fetch balances
         balance_request = AccountsBalanceGetRequest(access_token=access_token)
         balance_response = plaid_client.accounts_balance_get(balance_request)
+        balance_dict = balance_response.to_dict()
         
         # Store accounts
-        for account in balance_response['accounts']:
+        for account in balance_dict['accounts']:
             account_id = account['account_id']
             accounts_store[account_id] = {
                 'account_id': account_id,
@@ -104,9 +109,10 @@ def sync_transactions(access_token, item_id):
                 cursor=cursor
             )
             response = plaid_client.transactions_sync(request_data)
+            response_dict = response.to_dict()
             
             # Add new transactions
-            for transaction in response['added']:
+            for transaction in response_dict['added']:
                 transaction_id = transaction['transaction_id']
                 transactions_store[transaction_id] = {
                     'transaction_id': transaction_id,
@@ -121,8 +127,8 @@ def sync_transactions(access_token, item_id):
                 }
                 added.append(transactions_store[transaction_id])
             
-            has_more = response['has_more']
-            cursor = response['next_cursor']
+            has_more = response_dict['has_more']
+            cursor = response_dict['next_cursor']
         
         return {
             'added': len(added),

@@ -118,6 +118,12 @@ const plaidApi = {
         });
         return response.data;
     },
+    create_sandbox_public_token: async (userId = 'user-sandbox')=>{
+        const response = await apiClient.post('/api/plaid/sandbox/public_token/create', {
+            user_id: userId
+        });
+        return response.data;
+    },
     exchangePublicToken: async (publicToken, userId = 'user-sandbox')=>{
         const response = await apiClient.post('/api/plaid/exchange-token', {
             public_token: publicToken,

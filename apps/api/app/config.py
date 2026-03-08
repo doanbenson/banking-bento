@@ -35,8 +35,8 @@ configuration = plaid.Configuration(
 api_client = plaid.ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
 
-# Plaid Products
-PLAID_PRODUCTS = [Products('auth'), Products('transactions'), Products('balance')]
+# Plaid Products - auth includes balance, transactions syncs transactions
+PLAID_PRODUCTS = [Products('auth'), Products('transactions')]
 PLAID_COUNTRY_CODES = [CountryCode('US')]
 
 # Alpaca Configuration

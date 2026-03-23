@@ -64,15 +64,9 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
             public_token=public_token
         )
         exchange_response = plaid_client.item_public_token_exchange(exchange_request)
-        exchange_dict = exchange_response.to_dict()
         
-<<<<<<< HEAD
-        access_token = exchange_dict['access_token']
-        item_id = exchange_dict['item_id']
-=======
         access_token = exchange_response.access_token
         item_id = exchange_response.item_id
->>>>>>> d7305e017f0ad2e514f2aafb1b318cad26f10c4b
         
         # Store the item
         items_store[item_id] = {
@@ -89,16 +83,11 @@ def exchange_public_token(public_token, user_id='user-sandbox'):
         # Fetch balances
         balance_request = AccountsBalanceGetRequest(access_token=access_token)
         balance_response = plaid_client.accounts_balance_get(balance_request)
-        balance_dict = balance_response.to_dict()
         
         # Store accounts
-<<<<<<< HEAD
-        for account in balance_dict['accounts']:
-            account_id = account['account_id']
-=======
+
         for account in balance_response.accounts:
             account_id = account.account_id
->>>>>>> d7305e017f0ad2e514f2aafb1b318cad26f10c4b
             accounts_store[account_id] = {
                 'account_id': account_id,
                 'item_id': item_id,
@@ -141,16 +130,10 @@ def sync_transactions(access_token, item_id):
                 cursor=cursor
             )
             response = plaid_client.transactions_sync(request_data)
-            response_dict = response.to_dict()
             
             # Add new transactions
-<<<<<<< HEAD
-            for transaction in response_dict['added']:
-                transaction_id = transaction['transaction_id']
-=======
             for transaction in response.added:
                 transaction_id = transaction.transaction_id
->>>>>>> d7305e017f0ad2e514f2aafb1b318cad26f10c4b
                 transactions_store[transaction_id] = {
                     'transaction_id': transaction_id,
                     'account_id': transaction.account_id,
@@ -164,13 +147,9 @@ def sync_transactions(access_token, item_id):
                 }
                 added.append(transactions_store[transaction_id])
             
-<<<<<<< HEAD
-            has_more = response_dict['has_more']
-            cursor = response_dict['next_cursor']
-=======
+
             has_more = response.has_more
             cursor = response.next_cursor
->>>>>>> d7305e017f0ad2e514f2aafb1b318cad26f10c4b
         
         return {
             'added': len(added),

@@ -7,6 +7,7 @@
     "deploy:local": "cdklocal deploy"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
     "@types/source-map-support": "^0.5.10",
     "aws-cdk": "^2.1118.4",
     "aws-cdk-local": "^3.0.4",

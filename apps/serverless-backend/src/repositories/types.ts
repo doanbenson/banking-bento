@@ -19,13 +19,41 @@ export interface SplitRuleRecord extends SplitRule {
 export interface EventMetadataRecord {
   eventId: string;
   userId: string;
-  source: "lithic" | "plaid";
+  source: "plaid";
   sourceAccountId: string;
   amountMinor: number;
   currency: string;
   postedAtIso: string;
   executionId?: string;
   createdAtIso: string;
+}
+
+export interface AccountRecord {
+  accountId: string;
+  userId: string;
+  itemId: string;
+  mask: string;
+  name: string;
+  subtype: string;
+  balances: {
+    available?: number;
+    current?: number;
+    isoCurrencyCode?: string;
+  };
+  createdAtIso: string;
+  updatedAtIso: string;
+}
+
+export interface TransactionRecord {
+  transactionId: string;
+  accountId: string;
+  userId: string;
+  amountMinor: number;
+  date: string;
+  name: string;
+  pending: boolean;
+  createdAtIso: string;
+  updatedAtIso: string;
 }
 
 export interface ExecutionSummaryRecord {

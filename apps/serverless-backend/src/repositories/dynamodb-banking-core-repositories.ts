@@ -9,6 +9,8 @@ import {
 import {
   AuditRepository,
   BankingCoreRepositories,
+  AccountRepository,
+  TransactionRepository,
   EventRepository,
   ExecutionRepository,
   IdempotencyRepository,
@@ -17,12 +19,14 @@ import {
 import { isIdempotencyTransitionAllowed } from "./idempotency-transitions";
 import {
   AuditRecord,
+  AccountRecord,
   EventMetadataRecord,
   ExecutionSummaryRecord,
   IdempotencyRecord,
   IdempotencyScope,
   IdempotencyStatus,
   SplitRuleRecord,
+  TransactionRecord,
   TransferLegRecord,
   UserProfileRecord
 } from "./types";
@@ -189,6 +193,68 @@ const toAuditItem = (record: AuditRecord): DynamoItem => ({
   GSI1SK: `AUDIT#${record.timestampIso}#${record.step}`
 });
 
+
+const toAccountItem = (account: AccountRecord): DynamoItem => ({
+  PK: pk.account(account.accountId),
+  SK: sk.account(),
+  entityType: "ACCOUNT",
+  accountId: account.accountId,
+  userId: account.userId,
+  itemId: account.itemId,
+  mask: account.mask,
+  name: account.name,
+  subtype: account.subtype,
+  balances: account.balances,
+  createdAtIso: account.createdAtIso,
+  updatedAtIso: account.updatedAtIso,
+  GSI1PK: pk.user(account.userId),
+  GSI1SK: "ACCOUNT#" + account.accountId
+});
+
+const toTransactionItem = (txn: TransactionRecord): DynamoItem => ({
+  PK: pk.transaction(txn.transactionId),
+  SK: sk.transaction(),
+  entityType: "TRANSACTION",
+  transactionId: txn.transactionId,
+  accountId: txn.accountId,
+  userId: txn.userId,
+  amountMinor: txn.amountMinor,
+  date: txn.date,
+  name: txn.name,
+  pending: txn.pending,
+  createdAtIso: txn.createdAtIso,
+  updatedAtIso: txn.updatedAtIso,
+  GSI1PK: pk.user(txn.userId),
+  GSI1SK: "TXN#" + txn.date + "#" + txn.transactionId
+});
+
+const fromAccountItem = (item: DynamoItem): AccountRecord => ({
+  accountId: item.accountId as string,
+  userId: item.userId as string,
+  itemId: item.itemId as string,
+  mask: item.mask as string,
+  name: item.name as string,
+  subtype: item.subtype as string,
+  balances: item.balances as any,
+  createdAtIso: item.createdAtIso as string,
+  updatedAtIso: item.updatedAtIso as string
+});
+
+const fromTransactionItem = (item: DynamoItem): TransactionRecord => ({
+  transactionId: item.transactionId as string,
+  accountId: item.accountId as string,
+  userId: item.userId as string,
+  amountMinor: item.amountMinor as number,
+  date: item.date as string,
+  name: item.name as string,
+  pending: item.pending as boolean,
+  createdAtIso: item.createdAtIso as string,
+  updatedAtIso: item.updatedAtIso as string
+});
+
+
+
+
 const fromSplitRuleItem = (item: DynamoItem): SplitRuleRecord => ({
   userId: item.userId as string,
   ruleId: item.ruleId as string,
@@ -203,7 +269,7 @@ const fromSplitRuleItem = (item: DynamoItem): SplitRuleRecord => ({
 const fromEventItem = (item: DynamoItem): EventMetadataRecord => ({
   eventId: item.eventId as string,
   userId: item.userId as string,
-  source: item.source as "lithic" | "plaid",
+  source: item.source as "plaid",
   sourceAccountId: item.sourceAccountId as string,
   amountMinor: item.amountMinor as number,
   currency: item.currency as string,
@@ -411,14 +477,28 @@ class DynamoAuditRepository implements AuditRepository {
   }
 }
 
+class DynamoAccountRepository implements AccountRepository { //TODO
+  public constructor(private readonly client: DynamoRepositoryClient) {}
+
+  public async 
+}
+
+class DynamoTransactionRepository implements TransactionRepository { //TODO
+  public constructor(private readonly client: DynamoRepositoryClient) {}
+
+  public async 
+} 
+
 export const createDynamoBankingCoreRepositories = (
   client: DynamoRepositoryClient
 ): BankingCoreRepositories => ({
   users: new DynamoUserRepository(client),
+  accounts: new DynamoAccountRepository(client),
+  transactions: new DynamoTransactionRepository(client),
   events: new DynamoEventRepository(client),
   executions: new DynamoExecutionRepository(client),
   idempotency: new DynamoIdempotencyRepository(client),
-  audit: new DynamoAuditRepository(client)
+  audit: new DynamoAuditRepository(client),
 });
 
 export const listExecutionAuditTimelineQuery = (executionId: string): QueryItemsInput => ({
@@ -430,3 +510,5 @@ export const listExecutionAuditTimelineQuery = (executionId: string): QueryItems
     ":auditPrefix": "AUDIT#"
   }
 });
+
+

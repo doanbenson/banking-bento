@@ -1,5 +1,7 @@
 import {
   AuditRepository,
+  AccountRepository,
+  TransactionRepository,
   BankingCoreRepositories,
   EventRepository,
   ExecutionRepository,
@@ -9,6 +11,8 @@ import {
 import { isIdempotencyTransitionAllowed } from "./idempotency-transitions";
 import {
   AuditRecord,
+  AccountRecord,
+  TransactionRecord,
   EventMetadataRecord,
   ExecutionSummaryRecord,
   IdempotencyRecord,
@@ -181,8 +185,30 @@ class InMemoryAuditRepository implements AuditRepository {
   }
 }
 
+class InMemoryAccountRepository implements AccountRepository {
+  private readonly accounts = new Map<string, AccountRecord>();
+  public async putAccount(account: AccountRecord): Promise<void> {
+    this.accounts.set(account.accountId, account);
+  }
+  public async getAccountsByUser(userId: string): Promise<AccountRecord[]> {
+    return Array.from(this.accounts.values()).filter((a) => a.userId === userId);
+  }
+}
+
+class InMemoryTransactionRepository implements TransactionRepository {
+  private readonly transactions = new Map<string, TransactionRecord>();
+  public async putTransaction(transaction: TransactionRecord): Promise<void> {
+    this.transactions.set(transaction.transactionId, transaction);
+  }
+  public async getTransactionsByUser(userId: string): Promise<TransactionRecord[]> {
+    return Array.from(this.transactions.values()).filter((t) => t.userId === userId);
+  }
+}
+
 export const createInMemoryBankingCoreRepositories = (): BankingCoreRepositories => ({
   users: new InMemoryUserRepository(),
+  accounts: new InMemoryAccountRepository(),
+  transactions: new InMemoryTransactionRepository(),
   events: new InMemoryEventRepository(),
   executions: new InMemoryExecutionRepository(),
   idempotency: new InMemoryIdempotencyRepository(),

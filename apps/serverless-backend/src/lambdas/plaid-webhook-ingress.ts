@@ -1,3 +1,4 @@
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { DepositReceivedEvent } from "../contracts/events";
 import {
   InboundIdempotencyLockRepository,
@@ -106,6 +107,20 @@ export const createHandler = (
     });
 
     const parsed = parseBody(event.body);
+
+    if (parsed.ok && typeof parsed.value === 'object' && parsed.value !== null) {
+      const payload = parsed.value as any;
+      if (payload.webhook_type === 'TRANSACTIONS' && payload.webhook_code === 'SYNC_UPDATES_AVAILABLE') {
+        const lambda = new LambdaClient({});
+        await lambda.send(new InvokeCommand({
+          FunctionName: process.env.PLAID_SYNC_LAMBDA_NAME || 'UnknownApp-PlaidSync',
+          InvocationType: 'Event',
+          Payload: Buffer.from(JSON.stringify(payload))
+        }));
+        return { statusCode: 200, body: JSON.stringify({ accepted: true, status: 'sync_triggered' }) };
+      }
+    }
+
     if (!parsed.ok) {
       logger.warn("Rejected webhook request due to invalid JSON", {
         classification: "WEBHOOK_VALIDATION_FAILED",

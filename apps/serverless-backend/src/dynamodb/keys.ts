@@ -2,6 +2,8 @@ export const BANKING_CORE_TABLE = "BankingCore";
 
 export const ENTITY_PREFIX = {
   user: "USER",
+  account: "ACCOUNT",
+  transaction: "TXN",
   rule: "RULE",
   event: "EVENT",
   execution: "EXEC",
@@ -12,6 +14,8 @@ export const ENTITY_PREFIX = {
 
 export const pk = {
   user: (userId: string) => `${ENTITY_PREFIX.user}#${userId}`,
+  account: (accountId: string) => `${ENTITY_PREFIX.account}#${accountId}`,
+  transaction: (transactionId: string) => `${ENTITY_PREFIX.transaction}#${transactionId}`,
   rule: (ruleId: string) => `${ENTITY_PREFIX.rule}#${ruleId}`,
   event: (eventId: string) => `${ENTITY_PREFIX.event}#${eventId}`,
   execution: (executionId: string) => `${ENTITY_PREFIX.execution}#${executionId}`,
@@ -23,6 +27,8 @@ export const pk = {
 
 export const sk = {
   profile: () => "PROFILE",
+  account: () => "DETAILS",
+  transaction: () => "DETAILS",
   rule: (ruleId: string) => `${ENTITY_PREFIX.rule}#${ruleId}`,
   eventMetadata: () => "METADATA",
   summary: () => "SUMMARY",

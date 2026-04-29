@@ -8,13 +8,25 @@ import {
   IdempotencyStatus,
   SplitRuleRecord,
   TransferLegRecord,
-  UserProfileRecord
+  UserProfileRecord,
+  AccountRecord,
+  TransactionRecord
 } from "./types";
 
 export interface UserRepository {
   putProfileIfAbsent(profile: UserProfileRecord): Promise<void>;
   upsertSplitRule(rule: SplitRuleRecord): Promise<void>;
   listSplitRules(userId: string): Promise<SplitRuleRecord[]>;
+}
+
+export interface AccountRepository {
+  putAccount(account: AccountRecord): Promise<void>;
+  getAccountsByUser(userId: string): Promise<AccountRecord[]>;
+}
+
+export interface TransactionRepository {
+  putTransaction(transaction: TransactionRecord): Promise<void>;
+  getTransactionsByUser(userId: string): Promise<TransactionRecord[]>;
 }
 
 export interface EventRepository {
@@ -63,6 +75,8 @@ export interface AuditRepository {
 
 export interface BankingCoreRepositories {
   readonly users: UserRepository;
+  readonly accounts: AccountRepository;
+  readonly transactions: TransactionRepository;
   readonly events: EventRepository;
   readonly executions: ExecutionRepository;
   readonly idempotency: IdempotencyRepository;

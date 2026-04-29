@@ -17,9 +17,9 @@ import { createInMemoryBankingCoreRepositories } from "../repositories/in-memory
 import { BankingCoreRepositories, IdempotencyRepository } from "../repositories/interfaces";
 import { IdempotencyRecord } from "../repositories/types";
 import {
-  getDefaultLithicTransferProvider,
-  LithicTransferProvider
-} from "../providers/lithic-transfer-provider";
+  getDefaultPlaidTransferProvider,
+  PlaidTransferProvider
+} from "../providers/plaid-transfer-provider";
 
 export interface CompensateTransferLegInput {
   executionId: string;
@@ -41,7 +41,7 @@ export interface CompensateTransferLegResult {
 
 interface CompensateTransferLegDependencies {
   repositories: Pick<BankingCoreRepositories, "executions" | "idempotency" | "audit">;
-  provider: LithicTransferProvider;
+  provider: PlaidTransferProvider;
   now: () => Date;
 }
 
@@ -53,7 +53,7 @@ const defaultDependencies: CompensateTransferLegDependencies = {
     idempotency: inMemoryDefaultRepositories.idempotency,
     audit: inMemoryDefaultRepositories.audit
   },
-  provider: getDefaultLithicTransferProvider(),
+  provider: getDefaultPlaidTransferProvider(),
   now: () => new Date()
 };
 

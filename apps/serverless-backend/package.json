@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "deploy:local": "cdklocal deploy"
+    "bootstrap:local": "cdklocal bootstrap",
+    "deploy:local": "cdklocal deploy --require-approval never"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",

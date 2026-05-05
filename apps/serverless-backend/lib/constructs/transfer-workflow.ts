@@ -16,12 +16,12 @@ export class TransferWorkflow extends Construct {
 
     // 1. Define the processing Lambdas
     const processTransferLambda = new lambda.NodejsFunction(this, 'ProcessTransfer', {
-      entry: path.join(__dirname, '../../src/process-transfer-leg.ts'),
+      entry: path.join(__dirname, '../../src/lambdas/process-transfer-leg.ts'),
       environment: { TABLE_NAME: props.databaseTable.tableName },
     });
 
     const compensateTransferLambda = new lambda.NodejsFunction(this, 'CompensateTransfer', {
-      entry: path.join(__dirname, '../../src/compensate-transfer-leg.ts'),
+      entry: path.join(__dirname, '../../src/lambdas/compensate-transfer-leg.ts'),
       environment: { TABLE_NAME: props.databaseTable.tableName },
     });
 

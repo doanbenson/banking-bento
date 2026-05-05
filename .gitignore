@@ -32,30 +32,6 @@ apps/web/next-env.d.ts
 /coverage
 apps/web/coverage/
 
-# ===== Backend (Flask/Python) =====
-# Python
-apps/api/__pycache__/
-apps/api/**/__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# Virtual environments
-apps/api/venv/
-apps/api/env/
-apps/api/ENV/
-apps/api/.venv/
-
-# Flask
-apps/api/instance/
-apps/api/.webassets-cache
-
-# Python distributions
-apps/api/*.egg-info/
-apps/api/dist/
-apps/api/build/
-
 # ===== Environment Variables =====
 .env
 .env.local
@@ -87,8 +63,5 @@ yarn-error.log*
 .vercel
 .turbo
 
-# ===== bot ======
-__pycache__/
-*.pyc
-.env
-training/checkpoints/*.pt
+# ===== Backend ====
+apps/serverless-backend/cdk.out

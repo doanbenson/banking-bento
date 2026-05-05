@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { AxiosError } from 'axios';
 import { usePlaidLink } from 'react-plaid-link';
 import { Button } from '@/components/ui/button';
-import { plaidApi } from '@/lib/api-client';
+import { API_BASE_URL, plaidApi } from '@/lib/api-client';
 
 type PlaidLinkSuccessData = Awaited<ReturnType<typeof plaidApi.exchangePublicToken>>;
 
@@ -29,25 +29,32 @@ export default function PlaidLinkButton({
 }: PlaidLinkButtonProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  const fetchLinkToken = useCallback(async () => {
+    try {
+      setLinkError(null);
+      const data = await plaidApi.createLinkToken(userId);
+      if (data.link_token) {
+        setLinkToken(data.link_token);
+      } else {
+        setLinkError('Link token missing from API response.');
+        console.error('No link token in response:', data);
+      }
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<PlaidErrorResponse>;
+      const message = axiosError.response?.data?.error ?? axiosError.message;
+      setLinkToken(null);
+      setLinkError(message || 'Unable to fetch Plaid link token.');
+      console.error(`Error fetching link token from ${API_BASE_URL}:`, error);
+      onError?.(error);
+    }
+  }, [onError, userId]);
 
   // Fetch link token on mount
   useEffect(() => {
-    const fetchLinkToken = async () => {
-      try {
-        const data = await plaidApi.createLinkToken(userId);
-        if (data.link_token) {
-          setLinkToken(data.link_token);
-        } else {
-          console.error('No link token in response:', data);
-        }
-      } catch (error: unknown) {
-        console.error('Error fetching link token:', error);
-        onError?.(error);
-      }
-    };
-
-    fetchLinkToken();
-  }, [onError, userId]);
+    void fetchLinkToken();
+  }, [fetchLinkToken]);
 
   // Handle successful Plaid Link flow
   const handlePlaidSuccess = useCallback(
@@ -86,16 +93,21 @@ export default function PlaidLinkButton({
   const handleClick = () => {
     if (ready) {
       open();
+      return;
+    }
+
+    if (linkError && !loading) {
+      void fetchLinkToken();
     }
   };
 
   return (
     <Button
       onClick={handleClick}
-      disabled={loading || !ready}
+      disabled={loading || (!ready && !linkError)}
       variant={variant}
     >
-      {loading ? 'Processing...' : !ready ? 'Loading Link...' : buttonText}
+      {loading ? 'Processing...' : ready ? buttonText : linkError ? 'Retry Link Setup' : 'Loading Link...'}
     </Button>
   );
 }

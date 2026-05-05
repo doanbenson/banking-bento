@@ -6,12 +6,14 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=web",
-    "dev:api": "cd apps/api && python run.py",
-    "dev:all": "npm run dev & npm run dev:api",
+    "localstack:up": "docker compose up -d localstack",
+    "localstack:down": "docker compose down",
+    "backend:bootstrap:local": "npm run bootstrap:local --workspace=serverless-backend",
+    "backend:deploy:local": "npm run deploy:local --workspace=serverless-backend",
     "build": "npm run build --workspace=web",
     "start": "npm run start --workspace=web",
     "lint": "npm run lint --workspace=web",
-    "deploy:local": "cdklocal deploy"
+    "deploy:local": "npm run deploy:local --workspace=serverless-backend"
   },
   "devDependencies": {
     "@types/node": "^25.6.0"

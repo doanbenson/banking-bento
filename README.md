@@ -1,168 +1,64 @@
 # Plaid Bank App
 
-A minimalistic bank application built with a monorepository structure, featuring Next.js 16 with shadcn/ui for the frontend and Flask with Plaid API integration for the backend.
+Serverless-first banking demo with a Next.js frontend and AWS CDK backend running on LocalStack for local development.
 
-## 🏗️ Project Structure
+## Project Structure
 
-```
-plaid-bank-app/
-├── apps/
-│   ├── web/                 # Next.js frontend
-│   │   ├── app/            # Next.js App Router
-│   │   ├── components/     # React components
-│   │   │   ├── ui/        # shadcn components
-│   │   │   └── bank/      # Custom bank components
-│   │   └── lib/           # Utilities and API client
-│   │
-│   ├── api/                # Flask backend (legacy during migration)
-│       ├── app/
-│       │   ├── handlers/  # Business logic
-│       │   ├── routes/    # API endpoints
-│       │   └── models/    # Data models
-│       └── requirements.txt
-│   │
-│   └── serverless-backend/ # AWS Lambda/Step Functions migration scaffold
-│       ├── src/           # Contracts, Lambdas, key helpers
-│       └── state-machines/ # Step Functions ASL definitions
-│
-└── package.json           # Root workspace config
-```
+- apps/web: Next.js frontend
+- apps/serverless-backend: CDK infrastructure + Lambda handlers + Step Functions scaffold
+- docker-compose.yml: LocalStack runtime
 
-## 🚀 Getting Started
+## Prerequisites
 
-### Prerequisites
+- Node.js 20+
+- npm 10+
+- Docker
 
-- **Node.js** 20+ and npm
-- **Python** 3.10+ and pip
-- **Plaid Account** (Sandbox credentials)
+## Local Development (Serverless Backend)
 
-### 1. Clone and Install
+1. Install dependencies
 
-```bash
-# Install frontend dependencies
-cd apps/web
-npm install
+	npm install
 
-# Install backend dependencies (after Python installation)
-cd ../api
-python -m venv venv
-# Windows PowerShell
-.\venv\Scripts\Activate.ps1
-# Windows CMD / Git Bash
-.\venv\Scripts\activate
-pip install -r requirements.txt
-```
+2. Start LocalStack
 
-### 2. Get Plaid Sandbox Credentials
+	npm run localstack:up
 
-1. Sign up at [Plaid Dashboard](https://dashboard.plaid.com/signup)
-2. Navigate to Team Settings > Keys
-3. Copy your `client_id` and `sandbox` secret
+3. Bootstrap and deploy the backend to LocalStack
 
-### 3. Configure Environment Variables
+	npm run backend:bootstrap:local
+	npm run backend:deploy:local
 
-**Frontend** (`apps/web/.env.local`):
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
+4. Resolve API Gateway ID and configure frontend environment
 
-**Backend** (`apps/api/.env`):
-```env
-PLAID_CLIENT_ID=your_client_id_here
-PLAID_SECRET=your_sandbox_secret_here
-PLAID_ENV=sandbox
-```
+	In PowerShell from repo root:
 
-### 4. Run the Application
+	$apiId = (docker exec localstack_main awslocal apigateway get-rest-apis | ConvertFrom-Json).items[0].id
+	"NEXT_PUBLIC_LOCALSTACK_API_ID=$apiId" | Out-File -FilePath apps/web/.env.local -Encoding utf8
 
-**Terminal 1 - Frontend:**
-```bash
-cd apps/web
-npm run dev
-```
-Frontend runs at [http://localhost:3000](http://localhost:3000)
+	Optional explicit base URL alternative:
 
-**Terminal 2 - Backend:**
-```bash
-cd apps/api
-# Activate virtual environment first
-python run.py
-```
-Backend runs at [http://localhost:5000](http://localhost:5000)
+	"NEXT_PUBLIC_API_URL=http://localhost:4566/restapis/$apiId/prod/_user_request_" | Out-File -FilePath apps/web/.env.local -Encoding utf8
 
-## 🧪 Testing with Plaid Sandbox
+5. Start frontend
 
-### Test Credentials
-- **Username:** `user_good`
-- **Password:** `pass_good`
-- **MFA Code:** `1234`
+	npm run dev
 
-### Specialized Test Users
-- `user_transactions_dynamic` - Realistic transactions
-- `user_bank_income` - Various income streams
-- `user_credit_profile_good` - Good credit profile
+Frontend: http://localhost:3000
 
-### Error Simulation
-Use passwords like `error_INVALID_CREDENTIALS` to test error handling.
+## API Routes
 
-## 📚 API Endpoints
+- POST /api/plaid/create-link-token
+- POST /api/plaid/sandbox/public_token/create
+- POST /api/plaid/exchange-token
+- POST /api/plaid/sync-transactions/{itemId}
+- GET /api/accounts
+- GET /api/accounts/{accountId}
+- GET /api/transactions
 
-### Plaid Routes
-- `POST /api/plaid/create-link-token` - Create Plaid Link token
-- `POST /api/plaid/exchange-token` - Exchange public token
-- `POST /api/plaid/sync-transactions/:item_id` - Sync transactions
+## Notes
 
-### Accounts Routes
-- `GET /api/accounts` - Get all accounts
-- `GET /api/accounts/:id` - Get specific account
-
-### Transactions Routes
-- `GET /api/transactions` - Get all transactions
-- `GET /api/transactions?account_id=:id` - Filter by account
-
-## 🎨 Features
-
-- ✅ Plaid Sandbox integration
-- ✅ Account linking via Plaid Link
-- ✅ Real-time balance display
-- ✅ Transaction history
-- ✅ Minimalistic UI with shadcn/ui (Tailwind v4)
-- ✅ Dark mode support
-- ✅ Responsive design
-- ⏸️ MongoDB integration (planned)
-- ⏸️ User authentication (planned)
-
-## 🛠️ Tech Stack
-
-**Frontend:**
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui components
-- react-plaid-link
-- axios
-
-**Backend:**
-- Flask 3.0
-- Plaid Python SDK
-- Flask-CORS
-- python-dotenv
-- (MongoDB - to be added)
-
-## 📝 Notes
-
-- Currently using in-memory storage for development
-- MongoDB will be integrated in a future update
-- All Plaid operations use Sandbox environment
-- Database setup instructions in `apps/api/SETUP.md`
-
-## 🤝 Contributing
-
-This is a personal project. Feel free to fork and modify for your own use.
-
-## 📄 License
-
-See LICENSE file for details.
+- Frontend API client now requires serverless config via NEXT_PUBLIC_API_URL or NEXT_PUBLIC_LOCALSTACK_API_ID.
+- Legacy Flask API has been removed from this workspace.
 
 

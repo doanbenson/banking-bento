@@ -200,10 +200,6 @@ const fromTransactionItem = (item) => ({
     createdAtIso: item.createdAtIso,
     updatedAtIso: item.updatedAtIso
 });
-const toAccountItem = (account) => ({ PK: keys_1.pk.account(account.accountId), SK: keys_1.sk.account(), entityType: 'ACCOUNT', accountId: account.accountId, userId: account.userId, itemId: account.itemId, mask: account.mask, name: account.name, subtype: account.subtype, balances: account.balances, createdAtIso: account.createdAtIso, updatedAtIso: account.updatedAtIso, GSI1PK: keys_1.pk.user(account.userId), GSI1SK: 'ACCOUNT#' + account.accountId });
-const toTransactionItem = (txn) => ({ PK: keys_1.pk.transaction(txn.transactionId), SK: keys_1.sk.transaction(), entityType: 'TRANSACTION', transactionId: txn.transactionId, accountId: txn.accountId, userId: txn.userId, amountMinor: txn.amountMinor, date: txn.date, name: txn.name, pending: txn.pending, createdAtIso: txn.createdAtIso, updatedAtIso: txn.updatedAtIso, GSI1PK: keys_1.pk.user(txn.userId), GSI1SK: 'TXN#' + txn.date + '#' + txn.transactionId });
-const fromAccountItem = (item) => ({ accountId: item.accountId, userId: item.userId, itemId: item.itemId, mask: item.mask, name: item.name, subtype: item.subtype, balances: item.balances, createdAtIso: item.createdAtIso, updatedAtIso: item.updatedAtIso });
-const fromTransactionItem = (item) => ({ transactionId: item.transactionId, accountId: item.accountId, userId: item.userId, amountMinor: item.amountMinor, date: item.date, name: item.name, pending: item.pending, createdAtIso: item.createdAtIso, updatedAtIso: item.updatedAtIso });
 const fromSplitRuleItem = (item) => ({
     userId: item.userId,
     ruleId: item.ruleId,
@@ -369,12 +365,64 @@ class DynamoAuditRepository {
         });
     }
 }
+class DynamoAccountRepository {
+    client;
+    constructor(client) {
+        this.client = client;
+    }
+    async putAccount(account) {
+        await this.client.put({
+            TableName: keys_1.BANKING_CORE_TABLE,
+            Item: toAccountItem(account)
+        });
+    }
+    async getAccountsByUser(userId) {
+        const input = {
+            TableName: keys_1.BANKING_CORE_TABLE,
+            IndexName: schema_1.BANKING_CORE_GSI1,
+            KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(GSI1SK, :acctPrefix)",
+            ExpressionAttributeValues: {
+                ":gsi1pk": keys_1.pk.user(userId),
+                ":acctPrefix": "ACCOUNT#"
+            }
+        };
+        const result = await this.client.query(input);
+        return (result.Items ?? []).map(fromAccountItem);
+    }
+}
+class DynamoTransactionRepository {
+    client;
+    constructor(client) {
+        this.client = client;
+    }
+    async putTransaction(transaction) {
+        await this.client.put({
+            TableName: keys_1.BANKING_CORE_TABLE,
+            Item: toTransactionItem(transaction)
+        });
+    }
+    async getTransactionsByUser(userId) {
+        const input = {
+            TableName: keys_1.BANKING_CORE_TABLE,
+            IndexName: schema_1.BANKING_CORE_GSI1,
+            KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(GSI1SK, :txnPrefix)",
+            ExpressionAttributeValues: {
+                ":gsi1pk": keys_1.pk.user(userId),
+                ":txnPrefix": "TXN#"
+            }
+        };
+        const result = await this.client.query(input);
+        return (result.Items ?? []).map(fromTransactionItem);
+    }
+}
 const createDynamoBankingCoreRepositories = (client) => ({
     users: new DynamoUserRepository(client),
+    accounts: new DynamoAccountRepository(client),
+    transactions: new DynamoTransactionRepository(client),
     events: new DynamoEventRepository(client),
     executions: new DynamoExecutionRepository(client),
     idempotency: new DynamoIdempotencyRepository(client),
-    audit: new DynamoAuditRepository(client)
+    audit: new DynamoAuditRepository(client),
 });
 exports.createDynamoBankingCoreRepositories = createDynamoBankingCoreRepositories;
 const listExecutionAuditTimelineQuery = (executionId) => ({

@@ -134,14 +134,11 @@ const createHandler = (dependencies = defaultDependencies) => {
                 legId: transferEvent.leg.legId,
                 transferIdempotencyKey
             });
-            const providerResult = await dependencies.provider.createTransfer({
-                executionId: transferEvent.executionId,
-                legId: transferEvent.leg.legId,
-                sourceAccountId: transferEvent.sourceAccountId,
+            const providerResult = await dependencies.provider.executeTransfer({
+                idempotencyKey: transferIdempotencyKey,
                 destinationAccountId: transferEvent.leg.destinationAccountId,
                 amountMinor: transferEvent.leg.amountMinor,
-                currency: transferEvent.currency,
-                idempotencyKey: transferIdempotencyKey
+                currency: transferEvent.currency
             });
             await dependencies.repositories.executions.transitionTransferLegStatus({
                 executionId: transferEvent.executionId,

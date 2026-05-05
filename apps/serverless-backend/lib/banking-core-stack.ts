@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import { BankingDatabase } from './constructs/database';
 import { TransferWorkflow } from './constructs/transfer-workflow';
 import { BankingWebhooks } from './constructs/webhooks';
+import { BankingApiGateway } from './constructs/api-gateway';
 
 export class BankingCoreStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -17,9 +18,12 @@ export class BankingCoreStack extends cdk.Stack {
     });
 
     // 3. Build the Webhooks (requires both the database and the workflow)
-    new BankingWebhooks(this, 'IngressWebhooks', {
+    const webhooks = new BankingWebhooks(this, 'IngressWebhooks', {
       databaseTable: database.table,
       stateMachine: workflow.stateMachine,
     });
+
+    // 4. Build the API Gateway for frontend-facing API routes.
+    new BankingApiGateway(this, 'BankingApiGateway', webhooks.apiHandlers);
   }
 }

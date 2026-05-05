@@ -118,8 +118,28 @@ class InMemoryAuditRepository {
         this.records.push(record);
     }
 }
+class InMemoryAccountRepository {
+    accounts = new Map();
+    async putAccount(account) {
+        this.accounts.set(account.accountId, account);
+    }
+    async getAccountsByUser(userId) {
+        return Array.from(this.accounts.values()).filter((a) => a.userId === userId);
+    }
+}
+class InMemoryTransactionRepository {
+    transactions = new Map();
+    async putTransaction(transaction) {
+        this.transactions.set(transaction.transactionId, transaction);
+    }
+    async getTransactionsByUser(userId) {
+        return Array.from(this.transactions.values()).filter((t) => t.userId === userId);
+    }
+}
 const createInMemoryBankingCoreRepositories = () => ({
     users: new InMemoryUserRepository(),
+    accounts: new InMemoryAccountRepository(),
+    transactions: new InMemoryTransactionRepository(),
     events: new InMemoryEventRepository(),
     executions: new InMemoryExecutionRepository(),
     idempotency: new InMemoryIdempotencyRepository(),

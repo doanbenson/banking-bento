@@ -21,21 +21,25 @@ export interface TransferProvider {
    * If pending, it might cancel it.
    */
   reverseTransfer(input: {
+    executionId: string;
+    legId: string;
     idempotencyKey: string;
     providerTransferId: string;
-    amountMinor: number;
-    currency: string;
+    amountMinor?: number;
+    currency?: string;
+    reason?: string;
     description?: string;
   }): Promise<{
     status: 'COMPLETED' | 'PENDING' | 'FAILED';
     reason?: string;
+    providerCompensationId?: string;
   }>;
 }
 
 export const getDefaultPlaidTransferProvider = (): PlaidTransferProvider => new PlaidTransferProvider();
 
 export class PlaidTransferProvider implements TransferProvider {
-  async createTransfer(input: {
+  async executeTransfer(input: {
     idempotencyKey: string;
     destinationAccountId: string;
     amountMinor: number;
@@ -47,30 +51,20 @@ export class PlaidTransferProvider implements TransferProvider {
     // await this.plaidClient.transferCreate(...)
     return {
       providerTransferId: `plaid-tf-${Date.now()}`,
-      status: "COMPLETED",
+      status: "COMPLETED"
     };
   }
 
-  async executeTransfer(input: { //TODO 
-    idempotencyKey: string; 
-    destinationAccountId: string; 
-    amountMinor: number; 
-    currency: string; 
-    description?: string; 
-  }): Promise<{ providerTransferId: string; status: "COMPLETED" | "PENDING" | "FAILED"; reason?: string; }> {
-    console.log(`[PlaidTransferProvider] Executing transfer`, input);
-    return {
-        status: "COMPLETED";
-    }
-  }
-
   async reverseTransfer(input: {
+    executionId: string;
+    legId: string;
     idempotencyKey: string;
     providerTransferId: string;
-    amountMinor: number;
-    currency: string;
+    amountMinor?: number;
+    currency?: string;
+    reason?: string;
     description?: string;
-  }): Promise<{ status: "COMPLETED" | "PENDING" | "FAILED"; reason?: string; providerCompensationId?: string }> {
+  }): Promise<{ status: "COMPLETED" | "PENDING" | "FAILED"; reason?: string; providerCompensationId?: string; }> {
     console.log(`[PlaidTransferProvider] Reversing transfer`, input);
     // In a real app we'd interact with Plaid Node SDK:
     // await this.plaidClient.transferCancel(...)

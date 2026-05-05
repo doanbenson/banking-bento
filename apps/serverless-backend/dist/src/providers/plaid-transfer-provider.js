@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PlaidTransferProvider = void 0;
+exports.PlaidTransferProvider = exports.getDefaultPlaidTransferProvider = void 0;
+const getDefaultPlaidTransferProvider = () => new PlaidTransferProvider();
+exports.getDefaultPlaidTransferProvider = getDefaultPlaidTransferProvider;
 class PlaidTransferProvider {
     async executeTransfer(input) {
         console.log(`[PlaidTransferProvider] Executing transfer`, input);
@@ -8,7 +10,7 @@ class PlaidTransferProvider {
         // await this.plaidClient.transferCreate(...)
         return {
             providerTransferId: `plaid-tf-${Date.now()}`,
-            status: "COMPLETED",
+            status: "COMPLETED"
         };
     }
     async reverseTransfer(input) {
@@ -17,6 +19,7 @@ class PlaidTransferProvider {
         // await this.plaidClient.transferCancel(...)
         return {
             status: "COMPLETED",
+            providerCompensationId: `plaid-cmp-${Date.now()}`
         };
     }
 }

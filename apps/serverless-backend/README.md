@@ -45,9 +45,6 @@ Access patterns:
 - The state machine references Lambda ARNs as template variables (for IaC substitution).
 
 ## Ingress contract
-- `src/lambdas/lithic-webhook-ingress.ts`
-  - Expects JSON payload:
-    - `event_id`, `user_id`, `account_id`, `amount_minor`, `currency`, `posted_at`
 - `src/lambdas/plaid-webhook-ingress.ts`
   - Expects JSON payload:
     - `webhook_id`, `user_id`, `account_id`, `amount_minor`, `currency`, `posted_at`
@@ -75,11 +72,11 @@ Access patterns:
   - execution `PENDING -> IN_PROGRESS` (best-effort)
   - leg `PENDING -> IN_PROGRESS -> SUCCEEDED|FAILED`
   - idempotency `IN_PROGRESS -> SUCCEEDED|FAILED` (or `FAILED -> IN_PROGRESS` on retry reacquisition)
-- Provider calls go through `src/providers/lithic-transfer-provider.ts` and always carry a Lithic-style `Idempotency-Key` header value.
+- Provider calls go through `src/providers/plaid-transfer-provider.ts` and carry an idempotency key for idempotent operations.
 
 ## Compensation behavior
 - `src/lambdas/compensate-transfer-leg.ts` acquires compensation idempotency (`scope=compensation`) using a deterministic key built from execution + leg + provider transfer id.
-- Compensation performs provider reversal via the same Lithic abstraction and persists outcomes in repositories:
+- Compensation performs provider reversal via the Plaid provider abstraction and persists outcomes in repositories:
   - compensation idempotency `IN_PROGRESS -> SUCCEEDED|FAILED`
   - leg status `SUCCEEDED -> FAILED` with compensation reason metadata
   - audit append with provider transfer/reversal identifiers

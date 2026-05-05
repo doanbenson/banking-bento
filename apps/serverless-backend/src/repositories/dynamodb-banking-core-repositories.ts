@@ -477,16 +477,56 @@ class DynamoAuditRepository implements AuditRepository {
   }
 }
 
-class DynamoAccountRepository implements AccountRepository { //TODO
+class DynamoAccountRepository implements AccountRepository {
   public constructor(private readonly client: DynamoRepositoryClient) {}
 
-  public async 
+  public async putAccount(account: AccountRecord): Promise<void> {
+    await this.client.put({
+      TableName: BANKING_CORE_TABLE,
+      Item: toAccountItem(account)
+    });
+  }
+
+  public async getAccountsByUser(userId: string): Promise<AccountRecord[]> {
+    const input: QueryItemsInput = {
+      TableName: BANKING_CORE_TABLE,
+      IndexName: BANKING_CORE_GSI1,
+      KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(GSI1SK, :acctPrefix)",
+      ExpressionAttributeValues: {
+        ":gsi1pk": pk.user(userId),
+        ":acctPrefix": "ACCOUNT#"
+      }
+    };
+
+    const result = await this.client.query(input);
+    return (result.Items ?? []).map(fromAccountItem);
+  }
 }
 
-class DynamoTransactionRepository implements TransactionRepository { //TODO
+class DynamoTransactionRepository implements TransactionRepository {
   public constructor(private readonly client: DynamoRepositoryClient) {}
 
-  public async 
+  public async putTransaction(transaction: TransactionRecord): Promise<void> {
+    await this.client.put({
+      TableName: BANKING_CORE_TABLE,
+      Item: toTransactionItem(transaction)
+    });
+  }
+
+  public async getTransactionsByUser(userId: string): Promise<TransactionRecord[]> {
+    const input: QueryItemsInput = {
+      TableName: BANKING_CORE_TABLE,
+      IndexName: BANKING_CORE_GSI1,
+      KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(GSI1SK, :txnPrefix)",
+      ExpressionAttributeValues: {
+        ":gsi1pk": pk.user(userId),
+        ":txnPrefix": "TXN#"
+      }
+    };
+
+    const result = await this.client.query(input);
+    return (result.Items ?? []).map(fromTransactionItem);
+  }
 } 
 
 export const createDynamoBankingCoreRepositories = (

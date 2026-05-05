@@ -1,9 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { ok } from "./shared/api-response";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  return {
-    statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
-    body: JSON.stringify({ access_token: "access-sandbox-" + Date.now(), item_id: "item-123" })
-  };
+  return ok({ access_token: "access-sandbox-" + Date.now(), item_id: "item-123" });
 };

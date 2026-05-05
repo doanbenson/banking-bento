@@ -37,15 +37,29 @@ exports.BankingDatabase = void 0;
 const constructs_1 = require("constructs");
 const dynamodb = __importStar(require("aws-cdk-lib/aws-dynamodb"));
 const cdk = __importStar(require("aws-cdk-lib"));
+const keys_1 = require("../../src/dynamodb/keys");
 class BankingDatabase extends constructs_1.Construct {
     table;
     constructor(scope, id) {
         super(scope, id);
         this.table = new dynamodb.Table(this, 'BankingCoreTable', {
-            partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
-            sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+            tableName: keys_1.BANKING_CORE_TABLE,
+            partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+        this.table.addGlobalSecondaryIndex({
+            indexName: 'GSI1',
+            partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+            projectionType: dynamodb.ProjectionType.ALL
+        });
+        this.table.addGlobalSecondaryIndex({
+            indexName: 'GSI2',
+            partitionKey: { name: 'GSI2PK', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'GSI2SK', type: dynamodb.AttributeType.STRING },
+            projectionType: dynamodb.ProjectionType.ALL
         });
     }
 }

@@ -1,7 +1,7 @@
 import { ExecutionContext, ExecutionStatus, LegStatus } from "./execution";
 
 export interface DepositReceivedEvent {
-  source: "lithic" | "plaid";
+  source: "plaid";
   externalEventId: string;
   userId: string;
   accountId: string;

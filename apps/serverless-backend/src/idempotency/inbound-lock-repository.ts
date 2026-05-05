@@ -1,6 +1,6 @@
 import { BANKING_CORE_TABLE, pk, sk } from "../dynamodb/keys";
 
-type InboundSource = "lithic" | "plaid";
+type InboundSource = "plaid";
 
 export interface AcquireInboundIdempotencyLockInput {
   source: InboundSource;

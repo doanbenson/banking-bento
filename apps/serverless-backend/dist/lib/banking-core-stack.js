@@ -38,6 +38,7 @@ const cdk = __importStar(require("aws-cdk-lib"));
 const database_1 = require("./constructs/database");
 const transfer_workflow_1 = require("./constructs/transfer-workflow");
 const webhooks_1 = require("./constructs/webhooks");
+const api_gateway_1 = require("./constructs/api-gateway");
 class BankingCoreStack extends cdk.Stack {
     constructor(scope, id, props) {
         super(scope, id, props);
@@ -48,10 +49,12 @@ class BankingCoreStack extends cdk.Stack {
             databaseTable: database.table,
         });
         // 3. Build the Webhooks (requires both the database and the workflow)
-        new webhooks_1.BankingWebhooks(this, 'IngressWebhooks', {
+        const webhooks = new webhooks_1.BankingWebhooks(this, 'IngressWebhooks', {
             databaseTable: database.table,
             stateMachine: workflow.stateMachine,
         });
+        // 4. Build the API Gateway for frontend-facing API routes.
+        new api_gateway_1.BankingApiGateway(this, 'BankingApiGateway', webhooks.apiHandlers);
     }
 }
 exports.BankingCoreStack = BankingCoreStack;

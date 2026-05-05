@@ -50,8 +50,8 @@ export default function Dashboard() {
         transactionsApi.getAll(),
       ]);
       
-      setAccounts(accountsData.accounts || []);
-      setTransactions(transactionsData.transactions || []);
+      setAccounts(accountsData || []);
+      setTransactions(transactionsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -60,7 +60,11 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const timeout = setTimeout(() => {
+      void fetchData();
+    }, 0);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const handleLinkSuccess = (data: unknown) => {

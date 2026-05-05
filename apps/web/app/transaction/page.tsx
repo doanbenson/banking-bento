@@ -28,7 +28,7 @@ export default function TransactionPage() {
       setLoading(true);
       try {
         const response = await transactionsApi.getAll();
-        setTransactions(response.transactions || []);
+        setTransactions(response || []);
       } catch (error) {
         console.error('Error fetching transactions:', error);
       } finally {

@@ -34,10 +34,18 @@ export class BankingWebhooks extends Construct {
       ...(dynamoEndpoint ? { DYNAMODB_ENDPOINT: dynamoEndpoint } : {}),
     };
 
+    const nodejsFunctionDefaults = {
+      runtime: lambda_core.Runtime.NODEJS_20_X,
+      bundling: {
+        externalModules: ['@aws-sdk/*'],
+      },
+    };
+
     // 1. Plaid Webhook
     const plaidLambda = new lambda.NodejsFunction(this, 'PlaidWebhook', {
       entry: path.join(__dirname, '../../src/lambdas/plaid-webhook-ingress.ts'),
       environment: environmentVars,
+      ...nodejsFunctionDefaults,
     });
     const plaidUrl = plaidLambda.addFunctionUrl({ authType: lambda_core.FunctionUrlAuthType.NONE });
 
@@ -51,6 +59,7 @@ export class BankingWebhooks extends Construct {
       const fn = new lambda.NodejsFunction(this, id, {
         entry: path.join(__dirname, '../../src/lambdas/', filename),
         environment: environmentVars,
+        ...nodejsFunctionDefaults,
       });
       props.databaseTable.grantReadWriteData(fn);
       return fn;

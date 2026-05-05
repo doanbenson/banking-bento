@@ -30,6 +30,7 @@ export default function PlaidLinkButton({
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const isSandboxLinkToken = linkToken?.startsWith('link-sandbox-') ?? false;
 
   const fetchLinkToken = useCallback(async () => {
     try {
@@ -53,7 +54,11 @@ export default function PlaidLinkButton({
 
   // Fetch link token on mount
   useEffect(() => {
-    void fetchLinkToken();
+    const timeout = setTimeout(() => {
+      void fetchLinkToken();
+    }, 0);
+
+    return () => clearTimeout(timeout);
   }, [fetchLinkToken]);
 
   // Handle successful Plaid Link flow
@@ -62,6 +67,7 @@ export default function PlaidLinkButton({
       setLoading(true);
       try {
         const exchangeData = await plaidApi.exchangePublicToken(publicToken, userId);
+        await plaidApi.syncTransactions(exchangeData.item_id);
         onSuccess?.(exchangeData);
       } catch (error: unknown) {
         console.error('Error exchanging token:', error);
@@ -76,6 +82,23 @@ export default function PlaidLinkButton({
     [onError, onSuccess, userId]
   );
 
+  const handleSandboxLink = useCallback(async () => {
+    setLoading(true);
+    setLinkError(null);
+
+    try {
+      const sandboxData = await plaidApi.create_sandbox_public_token(userId);
+      await handlePlaidSuccess(sandboxData.public_token);
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<PlaidErrorResponse>;
+      const message = axiosError.response?.data?.error ?? axiosError.message;
+      setLinkError(message || 'Unable to complete sandbox link.');
+      onError?.(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [handlePlaidSuccess, onError, userId]);
+
   // Initialize Plaid Link
   const config = {
     token: linkToken,
@@ -89,8 +112,14 @@ export default function PlaidLinkButton({
   };
 
   const { open, ready } = usePlaidLink(config);
+  const canLink = ready || isSandboxLinkToken;
 
   const handleClick = () => {
+    if (isSandboxLinkToken) {
+      void handleSandboxLink();
+      return;
+    }
+
     if (ready) {
       open();
       return;
@@ -104,10 +133,10 @@ export default function PlaidLinkButton({
   return (
     <Button
       onClick={handleClick}
-      disabled={loading || (!ready && !linkError)}
+      disabled={loading || (!canLink && !linkError)}
       variant={variant}
     >
-      {loading ? 'Processing...' : ready ? buttonText : linkError ? 'Retry Link Setup' : 'Loading Link...'}
+      {loading ? 'Processing...' : canLink ? buttonText : linkError ? 'Retry Link Setup' : 'Loading Link...'}
     </Button>
   );
 }

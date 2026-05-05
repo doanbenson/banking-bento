@@ -1,5 +1,6 @@
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambda_core from 'aws-cdk-lib/aws-lambda';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as path from 'path';
@@ -18,11 +19,13 @@ export class TransferWorkflow extends Construct {
     const processTransferLambda = new lambda.NodejsFunction(this, 'ProcessTransfer', {
       entry: path.join(__dirname, '../../src/lambdas/process-transfer-leg.ts'),
       environment: { TABLE_NAME: props.databaseTable.tableName },
+      runtime: lambda_core.Runtime.NODEJS_20_X,
     });
 
     const compensateTransferLambda = new lambda.NodejsFunction(this, 'CompensateTransfer', {
       entry: path.join(__dirname, '../../src/lambdas/compensate-transfer-leg.ts'),
       environment: { TABLE_NAME: props.databaseTable.tableName },
+      runtime: lambda_core.Runtime.NODEJS_20_X,
     });
 
     // 2. Grant DB permissions to the Lambdas

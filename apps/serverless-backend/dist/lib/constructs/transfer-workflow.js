@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferWorkflow = void 0;
 const constructs_1 = require("constructs");
 const lambda = __importStar(require("aws-cdk-lib/aws-lambda-nodejs"));
+const lambda_core = __importStar(require("aws-cdk-lib/aws-lambda"));
 const sfn = __importStar(require("aws-cdk-lib/aws-stepfunctions"));
 const path = __importStar(require("path"));
 class TransferWorkflow extends constructs_1.Construct {
@@ -44,12 +45,14 @@ class TransferWorkflow extends constructs_1.Construct {
         super(scope, id);
         // 1. Define the processing Lambdas
         const processTransferLambda = new lambda.NodejsFunction(this, 'ProcessTransfer', {
-            entry: path.join(__dirname, '../../src/process-transfer-leg.ts'),
+            entry: path.join(__dirname, '../../src/lambdas/process-transfer-leg.ts'),
             environment: { TABLE_NAME: props.databaseTable.tableName },
+            runtime: lambda_core.Runtime.NODEJS_20_X,
         });
         const compensateTransferLambda = new lambda.NodejsFunction(this, 'CompensateTransfer', {
-            entry: path.join(__dirname, '../../src/compensate-transfer-leg.ts'),
+            entry: path.join(__dirname, '../../src/lambdas/compensate-transfer-leg.ts'),
             environment: { TABLE_NAME: props.databaseTable.tableName },
+            runtime: lambda_core.Runtime.NODEJS_20_X,
         });
         // 2. Grant DB permissions to the Lambdas
         props.databaseTable.grantReadWriteData(processTransferLambda);

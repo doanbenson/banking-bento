@@ -61,4 +61,42 @@ Frontend: http://localhost:3000
 - Frontend API client now requires serverless config via NEXT_PUBLIC_API_URL or NEXT_PUBLIC_LOCALSTACK_API_ID.
 - Legacy Flask API has been removed from this workspace.
 
+## How to use for dev
+ 1. Start LocalStack:
+
+  npm run localstack:up
+
+  2. Bootstrap once per fresh LocalStack volume:
+
+  npm run backend:bootstrap:local
+
+  3. Deploy backend:
+
+  npm run backend:deploy:local
+
+  4. Confirm API Gateway ID if needed:
+
+  docker exec localstack_main awslocal apigateway get-rest-apis
+
+  Your current API URL is already in apps/web/.env.local:
+
+  NEXT_PUBLIC_API_URL=https://elb0wqlyvz.execute-api.localhost.localstack.cloud:4566/prod
+
+  If you redeploy into a fresh LocalStack and the API ID changes, update that file with the new CDK output URL.
+
+  5. Start frontend:
+
+  npm run dev
+
+  Open:
+
+  http://localhost:3000
+
+  6. Test the link button:
+
+  - Go to the dashboard.
+  - If there are no accounts, click Link your first account.
+  - In local sandbox mode it should not open real Plaid. It should call the mock endpoints, sync a fake account/
+    transaction, and refresh the dashboard.
+
 

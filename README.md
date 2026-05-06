@@ -29,6 +29,21 @@ Serverless-first banking demo with a Next.js frontend and AWS CDK backend runnin
 	npm run backend:bootstrap:local
 	npm run backend:deploy:local
 
+	To use real Plaid sandbox APIs, set Plaid credentials before deploying:
+
+	$env:PLAID_ENV="sandbox"
+	$env:PLAID_CLIENT_ID="<your Plaid client id>"
+	$env:PLAID_SECRET_SANDBOX="<your Plaid sandbox secret>"
+
+	Optional switches:
+
+	$env:PLAID_PRODUCTS="transactions"
+	$env:PLAID_COUNTRY_CODES="US"
+	$env:PLAID_SANDBOX_INSTITUTION_ID="ins_109508"
+
+	For other Plaid environments, redeploy with PLAID_ENV set to development or production and provide either
+	PLAID_SECRET_DEVELOPMENT / PLAID_SECRET_PRODUCTION or a generic PLAID_SECRET.
+
 4. Resolve API Gateway ID and configure frontend environment
 
 	In PowerShell from repo root:
@@ -80,8 +95,6 @@ Frontend: http://localhost:3000
 
   Your current API URL is already in apps/web/.env.local:
 
-  NEXT_PUBLIC_API_URL=https://elb0wqlyvz.execute-api.localhost.localstack.cloud:4566/prod
-
   If you redeploy into a fresh LocalStack and the API ID changes, update that file with the new CDK output URL.
 
   5. Start frontend:
@@ -96,7 +109,7 @@ Frontend: http://localhost:3000
 
   - Go to the dashboard.
   - If there are no accounts, click Link your first account.
-  - In local sandbox mode it should not open real Plaid. It should call the mock endpoints, sync a fake account/
-    transaction, and refresh the dashboard.
+  - In Plaid sandbox mode it should call real Plaid sandbox APIs for link-token creation and token exchange.
+    Transaction sync still writes a small local sample account/transaction until the transactions sync endpoint is wired to Plaid.
 
 

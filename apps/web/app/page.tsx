@@ -119,7 +119,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <Input className="hidden w-64 rounded-full bg-card/80 md:block" placeholder="Search wealth..." />
             <Avatar className="h-9 w-9 border border-border/70">
-              <AvatarFallback>EL</AvatarFallback>
+              <AvatarFallback>BD</AvatarFallback>
             </Avatar>
           </div>
         </div>

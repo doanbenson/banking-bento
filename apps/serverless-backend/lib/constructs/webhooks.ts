@@ -31,6 +31,19 @@ export class BankingWebhooks extends Construct {
     const environmentVars = {
       TABLE_NAME: props.databaseTable.tableName,
       STATE_MACHINE_ARN: props.stateMachine.stateMachineArn,
+      PLAID_ENV: process.env.PLAID_ENV || 'sandbox',
+      PLAID_CLIENT_ID: process.env.PLAID_CLIENT_ID || '',
+      PLAID_SECRET: process.env.PLAID_SECRET || '',
+      PLAID_SECRET_SANDBOX: process.env.PLAID_SECRET_SANDBOX || '',
+      PLAID_SECRET_DEVELOPMENT: process.env.PLAID_SECRET_DEVELOPMENT || '',
+      PLAID_SECRET_PRODUCTION: process.env.PLAID_SECRET_PRODUCTION || '',
+      PLAID_CLIENT_NAME: process.env.PLAID_CLIENT_NAME || 'Banking Bento',
+      PLAID_PRODUCTS: process.env.PLAID_PRODUCTS || 'transactions',
+      PLAID_COUNTRY_CODES: process.env.PLAID_COUNTRY_CODES || 'US',
+      PLAID_LANGUAGE: process.env.PLAID_LANGUAGE || 'en',
+      PLAID_SANDBOX_INSTITUTION_ID: process.env.PLAID_SANDBOX_INSTITUTION_ID || 'ins_109508',
+      PLAID_REDIRECT_URI: process.env.PLAID_REDIRECT_URI || '',
+      PLAID_WEBHOOK_URL: process.env.PLAID_WEBHOOK_URL || '',
       ...(dynamoEndpoint ? { DYNAMODB_ENDPOINT: dynamoEndpoint } : {}),
     };
 

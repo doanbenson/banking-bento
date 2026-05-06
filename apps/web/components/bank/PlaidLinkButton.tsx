@@ -30,7 +30,6 @@ export default function PlaidLinkButton({
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const isSandboxLinkToken = linkToken?.startsWith('link-sandbox-') ?? false;
 
   const fetchLinkToken = useCallback(async () => {
     try {
@@ -82,23 +81,6 @@ export default function PlaidLinkButton({
     [onError, onSuccess, userId]
   );
 
-  const handleSandboxLink = useCallback(async () => {
-    setLoading(true);
-    setLinkError(null);
-
-    try {
-      const sandboxData = await plaidApi.create_sandbox_public_token(userId);
-      await handlePlaidSuccess(sandboxData.public_token);
-    } catch (error: unknown) {
-      const axiosError = error as AxiosError<PlaidErrorResponse>;
-      const message = axiosError.response?.data?.error ?? axiosError.message;
-      setLinkError(message || 'Unable to complete sandbox link.');
-      onError?.(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [handlePlaidSuccess, onError, userId]);
-
   // Initialize Plaid Link
   const config = {
     token: linkToken,
@@ -112,14 +94,8 @@ export default function PlaidLinkButton({
   };
 
   const { open, ready } = usePlaidLink(config);
-  const canLink = ready || isSandboxLinkToken;
 
   const handleClick = () => {
-    if (isSandboxLinkToken) {
-      void handleSandboxLink();
-      return;
-    }
-
     if (ready) {
       open();
       return;
@@ -133,10 +109,10 @@ export default function PlaidLinkButton({
   return (
     <Button
       onClick={handleClick}
-      disabled={loading || (!canLink && !linkError)}
+      disabled={loading || (!ready && !linkError)}
       variant={variant}
     >
-      {loading ? 'Processing...' : canLink ? buttonText : linkError ? 'Retry Link Setup' : 'Loading Link...'}
+      {loading ? 'Processing...' : ready ? buttonText : linkError ? 'Retry Link Setup' : 'Loading Link...'}
     </Button>
   );
 }

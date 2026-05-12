@@ -62,6 +62,7 @@ yarn-error.log*
 *.pem
 .vercel
 .turbo
+tmp
 
 # ===== Backend ====
 apps/serverless-backend/cdk.out

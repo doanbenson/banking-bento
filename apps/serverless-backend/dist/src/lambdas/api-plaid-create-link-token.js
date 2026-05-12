@@ -7,7 +7,7 @@ const handler = async (event) => {
     try {
         const body = event.body ? JSON.parse(event.body) : {};
         const userId = body.user_id ?? body.userId ?? "user-sandbox";
-        const plaidClient = (0, plaid_client_1.createPlaidClient)();
+        const plaidClient = await (0, plaid_client_1.createPlaidClient)();
         const response = await plaidClient.linkTokenCreate({
             client_name: process.env.PLAID_CLIENT_NAME || "Banking Bento",
             country_codes: (0, plaid_client_1.getPlaidCountryCodes)(),

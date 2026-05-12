@@ -3,6 +3,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as lambda_core from 'aws-cdk-lib/aws-lambda';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib';
 import * as path from 'path';
 
@@ -18,6 +19,7 @@ export interface BankingApiHandlers {
   readonly plaidSandboxCreate: lambda.NodejsFunction;
   readonly plaidExchangeToken: lambda.NodejsFunction;
   readonly plaidSync: lambda.NodejsFunction;
+  readonly transfersPost: lambda.NodejsFunction;
 }
 
 export class BankingWebhooks extends Construct {
@@ -26,17 +28,29 @@ export class BankingWebhooks extends Construct {
   constructor(scope: Construct, id: string, props: BankingWebhooksProps) {
     super(scope, id);
 
+    // -----------------------------------------------------------------------
+    // LocalStack / endpoint config
+    // -----------------------------------------------------------------------
     const dynamoEndpoint = process.env.DYNAMODB_ENDPOINT;
+    const localstackEndpoint = process.env.LOCALSTACK_ENDPOINT || process.env.AWS_ENDPOINT_URL || '';
 
-    const environmentVars = {
+    // SSM prefix — the path under which Plaid credentials live in Parameter Store.
+    // Lambdas use this env var to know where to look; the actual secret values are
+    // never baked into the Lambda environment.
+    const ssmPrefix = process.env.PLAID_SSM_PREFIX || '/banking-bento/plaid';
+
+    // -----------------------------------------------------------------------
+    // Non-secret environment variables injected into every Lambda.
+    // Plaid credentials (client-id, secrets) are intentionally excluded here;
+    // they are resolved at runtime via SSM.
+    // -----------------------------------------------------------------------
+    const environmentVars: Record<string, string> = {
       TABLE_NAME: props.databaseTable.tableName,
       STATE_MACHINE_ARN: props.stateMachine.stateMachineArn,
+      // Tells each Lambda which SSM prefix to use when fetching credentials.
+      PLAID_SSM_PREFIX: ssmPrefix,
+      // Non-secret config that is fine to keep in the environment.
       PLAID_ENV: process.env.PLAID_ENV || 'sandbox',
-      PLAID_CLIENT_ID: process.env.PLAID_CLIENT_ID || '',
-      PLAID_SECRET: process.env.PLAID_SECRET || '',
-      PLAID_SECRET_SANDBOX: process.env.PLAID_SECRET_SANDBOX || '',
-      PLAID_SECRET_DEVELOPMENT: process.env.PLAID_SECRET_DEVELOPMENT || '',
-      PLAID_SECRET_PRODUCTION: process.env.PLAID_SECRET_PRODUCTION || '',
       PLAID_CLIENT_NAME: process.env.PLAID_CLIENT_NAME || 'Banking Bento',
       PLAID_PRODUCTS: process.env.PLAID_PRODUCTS || 'transactions',
       PLAID_COUNTRY_CODES: process.env.PLAID_COUNTRY_CODES || 'US',
@@ -45,16 +59,38 @@ export class BankingWebhooks extends Construct {
       PLAID_REDIRECT_URI: process.env.PLAID_REDIRECT_URI || '',
       PLAID_WEBHOOK_URL: process.env.PLAID_WEBHOOK_URL || '',
       ...(dynamoEndpoint ? { DYNAMODB_ENDPOINT: dynamoEndpoint } : {}),
+      // Allows the SSM client inside the Lambda to point to LocalStack.
+      ...(localstackEndpoint ? { LOCALSTACK_ENDPOINT: localstackEndpoint } : {}),
     };
 
+    // -----------------------------------------------------------------------
+    // IAM policy: allows Lambdas to read Plaid params from SSM.
+    // -----------------------------------------------------------------------
+    const ssmReadPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['ssm:GetParameter', 'ssm:GetParameters'],
+      // Scope to just the Plaid prefix to follow least-privilege.
+      resources: [
+        `arn:aws:ssm:*:*:parameter${ssmPrefix}`,
+        `arn:aws:ssm:*:*:parameter${ssmPrefix}/*`,
+      ],
+    });
+
+    // -----------------------------------------------------------------------
+    // Lambda defaults
+    // -----------------------------------------------------------------------
     const nodejsFunctionDefaults = {
       runtime: lambda_core.Runtime.NODEJS_20_X,
       bundling: {
+        // Both @aws-sdk/* packages are available in the Lambda runtime —
+        // externalising them keeps the bundle small and avoids version conflicts.
         externalModules: ['@aws-sdk/*'],
       },
     };
 
-    // 1. Plaid Webhook
+    // -----------------------------------------------------------------------
+    // 1. Plaid Webhook ingress (not a Plaid-API caller, no SSM needed)
+    // -----------------------------------------------------------------------
     const plaidLambda = new lambda.NodejsFunction(this, 'PlaidWebhook', {
       entry: path.join(__dirname, '../../src/lambdas/plaid-webhook-ingress.ts'),
       environment: environmentVars,
@@ -62,28 +98,39 @@ export class BankingWebhooks extends Construct {
     });
     const plaidUrl = plaidLambda.addFunctionUrl({ authType: lambda_core.FunctionUrlAuthType.NONE });
 
-    // 2. Grant Permissions
+    // 2. Grant table + state-machine permissions to the webhook ingress.
     props.databaseTable.grantReadWriteData(plaidLambda);
     props.stateMachine.grantStartExecution(plaidLambda);
 
-    // 3. Create API Lambdas
-
-    const createApiLambda = (id: string, filename: string) => {
+    // -----------------------------------------------------------------------
+    // 3. Factory for API Lambdas
+    // -----------------------------------------------------------------------
+    const createApiLambda = (id: string, filename: string, needsSsm = false) => {
       const fn = new lambda.NodejsFunction(this, id, {
         entry: path.join(__dirname, '../../src/lambdas/', filename),
         environment: environmentVars,
         ...nodejsFunctionDefaults,
       });
       props.databaseTable.grantReadWriteData(fn);
+      if (needsSsm) {
+        fn.addToRolePolicy(ssmReadPolicy);
+      }
       return fn;
     };
 
-    const accountsGet = createApiLambda('ApiAccountsGet', 'api-accounts-get.ts');
-    const transactionsGet = createApiLambda('ApiTransactionsGet', 'api-transactions-get.ts');
-    const plaidCreateLinkToken = createApiLambda('ApiPlaidCreateLinkToken', 'api-plaid-create-link-token.ts');
-    const plaidSandboxCreate = createApiLambda('ApiPlaidSandboxCreate', 'api-plaid-sandbox-create.ts');
-    const plaidExchangeToken = createApiLambda('ApiPlaidExchangeToken', 'api-plaid-exchange-token.ts');
-    const plaidSyncFn = createApiLambda('ApiPlaidSync', 'api-plaid-sync.ts');
+    // -----------------------------------------------------------------------
+    // 4. API Lambdas — Plaid-facing ones get SSM access.
+    // -----------------------------------------------------------------------
+    const accountsGet      = createApiLambda('ApiAccountsGet',          'api-accounts-get.ts');
+    const transactionsGet  = createApiLambda('ApiTransactionsGet',      'api-transactions-get.ts');
+    const plaidCreateLinkToken = createApiLambda('ApiPlaidCreateLinkToken', 'api-plaid-create-link-token.ts', true);
+    const plaidSandboxCreate   = createApiLambda('ApiPlaidSandboxCreate',   'api-plaid-sandbox-create.ts',   true);
+    const plaidExchangeToken   = createApiLambda('ApiPlaidExchangeToken',   'api-plaid-exchange-token.ts',   true);
+    const plaidSyncFn          = createApiLambda('ApiPlaidSync',            'api-plaid-sync.ts');
+    const transfersPostFn      = createApiLambda('ApiTransfersPost',        'api-transfers-post.ts');
+
+    // Grant Step Functions start-execution permission to the transfers lambda
+    props.stateMachine.grantStartExecution(transfersPostFn);
 
     this.apiHandlers = {
       accountsGet,
@@ -91,14 +138,14 @@ export class BankingWebhooks extends Construct {
       plaidCreateLinkToken,
       plaidSandboxCreate,
       plaidExchangeToken,
-      plaidSync: plaidSyncFn
+      plaidSync: plaidSyncFn,
+      transfersPost: transfersPostFn,
     };
 
     plaidLambda.addEnvironment('PLAID_SYNC_LAMBDA_NAME', plaidSyncFn.functionName);
     plaidSyncFn.grantInvoke(plaidLambda);
 
-
-    // 4. Output webhook URL for Plaid webhook configuration/testing.
+    // 5. Output the webhook URL for Plaid dashboard / local testing.
     new cdk.CfnOutput(this, 'PlaidWebhookUrl', { value: plaidUrl.url });
   }
 }

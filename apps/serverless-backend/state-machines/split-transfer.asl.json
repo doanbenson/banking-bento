@@ -1,13 +1,80 @@
 {
-  "Comment": "Local scaffold for split transfer orchestration. The full workflow states can be added as their Lambda handlers are implemented.",
-  "StartAt": "AcknowledgeWebhook",
+  "Comment": "Split transfer orchestration: process a transfer leg and compensate on failure.",
+  "StartAt": "ProcessLeg",
   "States": {
-    "AcknowledgeWebhook": {
-      "Type": "Pass",
-      "Result": {
-        "status": "ACCEPTED"
+    "ProcessLeg": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ProcessTransferArn}",
+        "Payload.$": "$"
       },
-      "End": true
+      "ResultPath": "$.processResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["TransferTransientError"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "CompensateLeg"
+        }
+      ],
+      "Next": "CheckProcessResult"
+    },
+
+    "CheckProcessResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.processResult.Payload.status",
+          "StringEquals": "SUCCEEDED",
+          "Next": "Succeed"
+        }
+      ],
+      "Default": "CompensateLeg"
+    },
+
+    "CompensateLeg": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CompensateTransferArn}",
+        "Payload": {
+          "executionId.$": "$.executionId",
+          "legId.$": "$.leg.legId",
+          "providerTransferId.$": "$.processResult.Payload.providerTransferId",
+          "reason.$": "$.processResult.Payload.reason"
+        }
+      },
+      "ResultPath": "$.compensationResult",
+      "Next": "CheckCompensationResult"
+    },
+
+    "CheckCompensationResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.compensationResult.Payload.status",
+          "StringEquals": "COMPENSATED",
+          "Next": "ManualReview"
+        }
+      ],
+      "Default": "ManualReview"
+    },
+
+    "ManualReview": {
+      "Type": "Fail",
+      "Cause": "Transfer requires manual review or compensation completed",
+      "Error": "TRANSFER_MANUAL_REVIEW"
+    },
+
+    "Succeed": {
+      "Type": "Succeed"
     }
   }
 }

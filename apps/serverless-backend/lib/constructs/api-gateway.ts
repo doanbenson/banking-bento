@@ -10,6 +10,7 @@ export interface BankingApiGatewayProps {
   readonly plaidSandboxCreate: lambda.IFunction;
   readonly plaidExchangeToken: lambda.IFunction;
   readonly plaidSync: lambda.IFunction;
+  readonly transfersPost: lambda.IFunction;
 }
 
 export class BankingApiGateway extends Construct {
@@ -59,6 +60,10 @@ export class BankingApiGateway extends Construct {
       .addResource("sync-transactions")
       .addResource("{itemId}")
       .addMethod("POST", new apigw.LambdaIntegration(props.plaidSync));
+
+    const transfers = api.addResource("transfers");
+    transfers.addMethod("POST", new apigw.LambdaIntegration(props.transfersPost));
+
 
     new cdk.CfnOutput(this, "ApiGatewayBaseUrl", {
       value: this.restApi.url

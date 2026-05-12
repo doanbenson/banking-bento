@@ -12,7 +12,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       );
     }
 
-    const plaidClient = createPlaidClient();
+    const plaidClient = await createPlaidClient();
     const response = await plaidClient.sandboxPublicTokenCreate({
       institution_id: process.env.PLAID_SANDBOX_INSTITUTION_ID || "ins_109508",
       initial_products: getPlaidProducts()

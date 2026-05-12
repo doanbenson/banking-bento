@@ -15,7 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return fail(400, "BAD_REQUEST", "Missing public_token");
     }
 
-    const plaidClient = createPlaidClient();
+    const plaidClient = await createPlaidClient();
     const response = await plaidClient.itemPublicTokenExchange({
       public_token
     });

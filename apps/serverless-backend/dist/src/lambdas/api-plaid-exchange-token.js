@@ -13,7 +13,7 @@ const handler = async (event) => {
         if (!public_token) {
             return (0, api_response_1.fail)(400, "BAD_REQUEST", "Missing public_token");
         }
-        const plaidClient = (0, plaid_client_1.createPlaidClient)();
+        const plaidClient = await (0, plaid_client_1.createPlaidClient)();
         const response = await plaidClient.itemPublicTokenExchange({
             public_token
         });

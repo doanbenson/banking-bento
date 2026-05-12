@@ -11,7 +11,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     const body = event.body ? JSON.parse(event.body) : {};
     const userId = body.user_id ?? body.userId ?? "user-sandbox";
-    const plaidClient = createPlaidClient();
+    const plaidClient = await createPlaidClient();
 
     const response = await plaidClient.linkTokenCreate({
       client_name: process.env.PLAID_CLIENT_NAME || "Banking Bento",

@@ -4,32 +4,12 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { accountsApi } from '@/lib/api-client';
 import { transferApi } from '@/lib/api/services/transfer.service';
-
-type BankAccount = {
-  account_id: string;
-  name: string;
-  mask?: string;
-  type: string;
-  subtype: string;
-  balance: {
-    available: number | null;
-    current: number | null;
-    limit: number | null;
-  };
-};
+import type { Account } from '@/lib/api/types/domain';
+import { formatCurrency } from '@/lib/formatters';
 
 type TransferStatus = 'idle' | 'submitting' | 'success' | 'error';
 
-const formatCurrency = (amount: number | null): string => {
-  if (amount === null) return 'N/A';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(amount);
-};
-
-function AccountOption({ account }: { account: BankAccount }) {
+function AccountOption({ account }: { account: Account }) {
   return (
     <option value={account.account_id}>
       {account.name}{account.mask ? ` •••• ${account.mask}` : ''} — {formatCurrency(account.balance.current)}
@@ -42,7 +22,7 @@ function TransferPageContent() {
   const router = useRouter();
   const preselectedFrom = searchParams.get('fromAccount');
 
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [fromAccount, setFromAccount] = useState<string>('');
   const [toAccount, setToAccount] = useState<string>('');
@@ -129,11 +109,6 @@ function TransferPageContent() {
 
   return (
     <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet"
-      />
-
       <div className="min-h-screen bg-transparent">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-xl lg:ml-64 lg:px-8">

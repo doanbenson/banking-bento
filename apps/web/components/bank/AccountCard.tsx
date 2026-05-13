@@ -2,32 +2,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import type { Account } from '@/lib/api/types/domain';
+import { formatCurrency } from '@/lib/formatters';
 
 interface AccountCardProps {
-  account: {
-    account_id: string;
-    name: string;
-    mask?: string;
-    type: string;
-    subtype: string;
-    balance: {
-      available: number | null;
-      current: number | null;
-      limit: number | null;
-    };
-  };
+  account: Account;
   onClick?: () => void;
 }
 
 export default function AccountCard({ account, onClick }: AccountCardProps) {
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
-
   const getAccountTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       depository: 'bg-[#705866]',

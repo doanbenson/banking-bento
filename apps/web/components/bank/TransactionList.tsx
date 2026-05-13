@@ -2,17 +2,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface Transaction {
-  transaction_id: string;
-  account_id: string;
-  amount: number;
-  date: string;
-  name: string;
-  merchant_name?: string;
-  category: string[];
-  pending: boolean;
-}
+import type { Transaction } from '@/lib/api/types/domain';
+import { formatAbsoluteCurrency, formatShortDate } from '@/lib/formatters';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -25,22 +16,6 @@ export default function TransactionList({
   title = 'Recent Transactions',
   description = 'Your latest banking activity',
 }: TransactionListProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(Math.abs(amount));
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  };
-
   const isPositive = (amount: number) => amount < 0; // Plaid uses negative for deposits
 
   if (transactions.length === 0) {
@@ -83,7 +58,7 @@ export default function TransactionList({
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                {formatDate(transaction.date)}
+                {formatShortDate(transaction.date)}
               </p>
             </div>
 
@@ -99,7 +74,7 @@ export default function TransactionList({
                 }`}
               >
                 {isPositive(transaction.amount) ? '+' : '-'}
-                {formatCurrency(transaction.amount)}
+                {formatAbsoluteCurrency(transaction.amount)}
               </p>
             </div>
           </div>

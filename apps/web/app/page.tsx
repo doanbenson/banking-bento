@@ -1,47 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { accountsApi, transactionsApi } from '@/lib/api-client';
 import PlaidLinkButton from '@/components/bank/PlaidLinkButton';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import type { Account, Transaction } from '@/lib/api/types/domain';
+import { formatCurrency } from '@/lib/formatters';
 
-type BankAccount = {
-  account_id: string;
-  name: string;
-  mask?: string;
-  type: string;
-  subtype: string;
-  balance: {
-    available: number | null;
-    current: number | null;
-    limit: number | null;
-  };
-};
-
-type Transaction = {
-  transaction_id: string;
-  account_id: string;
-  amount: number;
-  date: string;
-  name: string;
-  merchant_name?: string;
-  category: string[];
-  pending: boolean;
-};
-
-type GroupedAccounts = Record<string, BankAccount[]>;
-
-const formatCurrency = (amount: number | null): string => {
-  if (amount === null) return 'N/A';
-  const abs = Math.abs(amount);
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(abs);
-  return amount < 0 ? `-${formatted}` : formatted;
-};
+type GroupedAccounts = Record<string, Account[]>;
 
 const GROUP_META: Record<string, { label: string; colorClass: string; bgClass: string; iconBg: string }> = {
   Savings:      { label: 'Savings',      colorClass: 'text-secondary',    bgClass: 'bg-secondary-container',  iconBg: 'bg-slate-50' },
@@ -50,13 +17,6 @@ const GROUP_META: Record<string, { label: string; colorClass: string; bgClass: s
   'Credit Cards': { label: 'Credit Cards', colorClass: 'text-primary',    bgClass: 'bg-primary-container/30', iconBg: 'bg-orange-50' },
   Loans:        { label: 'Loans',        colorClass: 'text-amber-700',     bgClass: 'bg-amber-50',            iconBg: 'bg-amber-50' },
   Other:        { label: 'Other',        colorClass: 'text-on-surface-variant', bgClass: 'bg-surface-variant', iconBg: 'bg-slate-50' },
-};
-
-const ACCOUNT_ICON: Record<string, string> = {
-  depository: 'account_balance',
-  credit:     'credit_card',
-  investment: 'trending_up',
-  loan:       'receipt_long',
 };
 
 function AccountInitialAvatar({ name, type }: { name: string; type: string }) {
@@ -73,8 +33,8 @@ function AccountRow({
   account,
   onTransfer,
 }: {
-  account: BankAccount;
-  onTransfer: (account: BankAccount) => void;
+  account: Account;
+  onTransfer: (account: Account) => void;
 }) {
   const balance = account.balance.current;
   const isNeg = (balance ?? 0) < 0;
@@ -121,10 +81,10 @@ function AccountGroup({
   onTransfer,
 }: {
   groupName: string;
-  accounts: BankAccount[];
+  accounts: Account[];
   transactions: Transaction[];
   defaultOpen?: boolean;
-  onTransfer: (account: BankAccount) => void;
+  onTransfer: (account: Account) => void;
 }) {
   const meta = GROUP_META[groupName] || GROUP_META['Other'];
   const groupTotal = accounts.reduce((s, a) => s + (a.balance.current ?? 0), 0);
@@ -181,12 +141,12 @@ function AccountGroup({
 }
 
 export default function Dashboard() {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [accountsData, transactionsData] = await Promise.all([
@@ -200,15 +160,15 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    void fetchData();
-  }, []);
+    void Promise.resolve().then(fetchData);
+  }, [fetchData]);
 
   const handleLinkSuccess = () => void fetchData();
 
-  const handleTransfer = (account: BankAccount) => {
+  const handleTransfer = (account: Account) => {
     router.push(`/transfer?fromAccount=${account.account_id}`);
   };
 
@@ -260,11 +220,6 @@ export default function Dashboard() {
         }
         .glass-header { backdrop-filter: blur(20px); }
       `}</style>
-
-      <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet"
-      />
 
       <div className="min-h-screen bg-transparent">
         {/* Top header */}

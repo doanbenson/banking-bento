@@ -28,9 +28,10 @@ export const plaidApi = {
     return response.data;
   },
 
-  syncTransactions: async (itemId: string) => {
+  syncTransactions: async (itemId: string, accessToken: string) => {
     const response = await apiClient.post<{ synced: boolean; item_id: string }>(
-      `/api/plaid/sync-transactions/${itemId}`
+      `/api/plaid/sync-transactions/${itemId}`,
+      { access_token: accessToken }
     );
     return response.data;
   },

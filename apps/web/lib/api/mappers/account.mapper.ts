@@ -1,6 +1,7 @@
-import { BackendAccount, BackendTransaction } from '../types/backend';
+import type { BackendAccount, BackendTransaction } from '../types/backend';
+import type { Account, Transaction } from '../types/domain';
 
-export const mapAccount = (account: BackendAccount) => ({
+export const mapAccount = (account: BackendAccount): Account => ({
   account_id: account.accountId,
   name: account.name,
   mask: account.mask,
@@ -13,7 +14,7 @@ export const mapAccount = (account: BackendAccount) => ({
   },
 });
 
-export const mapTransaction = (txn: BackendTransaction) => ({
+export const mapTransaction = (txn: BackendTransaction): Transaction => ({
   transaction_id: txn.transactionId,
   account_id: txn.accountId,
   amount: txn.amountMinor / 100,

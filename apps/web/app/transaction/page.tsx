@@ -6,17 +6,7 @@ import { transactionsApi } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-
-type Transaction = {
-  transaction_id: string;
-  account_id: string;
-  amount: number;
-  date: string;
-  name: string;
-  merchant_name?: string;
-  category: string[];
-  pending: boolean;
-};
+import type { Transaction } from '@/lib/api/types/domain';
 
 export default function TransactionPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

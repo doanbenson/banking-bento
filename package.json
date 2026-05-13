@@ -9,6 +9,7 @@
     "localstack:up": "docker compose up -d localstack",
     "localstack:down": "docker compose down",
     "ssm:seed": "node scripts/seed-ssm-local.mjs",
+    "web:env:api": "node scripts/sync-api-gateway-env.mjs",
     "backend:bootstrap:local": "npm run bootstrap:local --workspace=serverless-backend",
     "backend:deploy:local": "npm run deploy:local --workspace=serverless-backend",
     "build": "npm run build --workspace=web",

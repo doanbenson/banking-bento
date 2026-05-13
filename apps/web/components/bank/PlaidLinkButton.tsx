@@ -66,7 +66,7 @@ export default function PlaidLinkButton({
       setLoading(true);
       try {
         const exchangeData = await plaidApi.exchangePublicToken(publicToken, userId);
-        await plaidApi.syncTransactions(exchangeData.item_id);
+        await plaidApi.syncTransactions(exchangeData.item_id, exchangeData.access_token);
         onSuccess?.(exchangeData);
       } catch (error: unknown) {
         console.error('Error exchanging token:', error);

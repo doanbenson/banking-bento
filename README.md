@@ -16,25 +16,37 @@ Serverless-first banking demo with a Next.js frontend and AWS CDK backend runnin
 
 ## Local Development (Serverless Backend)
 
- 1. Start LocalStack
-```npm run localstack:up```
+```
+1. npm run localstack:up
+2. npm run ssm:seed
+3. npm run backend:bootstrap:local
+4. npm run backend:deploy:local
+5. npm run web:env:api
+6. npm run dev
+```
 
- 2. Seed Plaid credentials into SSM (reads your .env automatically)
-```npm run ssm:seed```
+After that, for normal frontend testing, just keep npm run dev running and use the app.
 
- 3. Bootstrap CDK (first time only)
-```npm run backend:bootstrap:local```
+__Run npm run ssm:seed__  
+when:
+LocalStack was restarted with fresh/empty data.
+You changed Plaid credentials in root .env.
+You changed PLAID_ENV, PLAID_PRODUCTS, or similar SSM-backed Plaid config.
 
- 4. Deploy backend to LocalStack
-```npm run backend:deploy:local```
-# → Copy the API Gateway URL from CDK Outputs
+__Run npm run backend:bootstrap:local__ 
+rarely:
+First time setting up LocalStack/CDK.
+After wiping LocalStack volumes.
+If CDK complains the environment is not bootstrapped.
 
- 5. Paste the URL into apps/web/.env.local → NEXT_PUBLIC_API_URL=...
+__Run npm run backend:deploy:local__
+when:
+You changed Lambda code.
+You changed CDK/API Gateway/DynamoDB/permissions/env vars.
+You restarted LocalStack and lost the deployed stack.
 
- 6. Start the frontend (already running)
-```npm run dev```
-
- 7. Test the link token endpoint directly
-```curl -X POST http://localhost:4566/restapis/<id>/prod/_user_request_/api/plaid/create-link-token \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"user-test-1"}'```
+__Run npm run web:env:api__
+after:
+Every backend deploy that might create a new API Gateway id.
+Any LocalStack reset/redeploy.
+You see frontend calls going to an old /restapis/<id>/... URL.

@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import PlaidLinkButton from '@/components/bank/PlaidLinkButton';
-import { Button } from '@/components/ui/button';
 
 const navItems = [
   { key: 'dashboard', label: 'Dashboard', href: '/', icon: 'dashboard' },
@@ -27,11 +26,6 @@ export default function SideNavbar() {
 
   return (
     <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet"
-      />
-
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border/70 bg-sidebar/85 px-4 py-6 backdrop-blur-xl lg:flex lg:flex-col">
         {/* Logo */}
         <div className="mb-8 flex items-center gap-3 px-2 pt-2">
